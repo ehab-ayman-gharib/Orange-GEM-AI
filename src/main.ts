@@ -104,12 +104,8 @@ function capturePhoto() {
           ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
           ctx.drawImage(img, 0, 0);
 
-          // Show the photo canvas, hide the main canvas
+          // Show the photo canvas, hide the main canvas (CSS handles sizing/positioning)
           photoPreviewCanvas.style.display = 'block';
-          photoPreviewCanvas.style.width = '100%';
-          photoPreviewCanvas.style.height = '100%';
-          photoPreviewCanvas.style.objectFit = 'contain';
-          photoPreviewCanvas.style.position = 'absolute';  // Match live canvas positioning if it uses absolute
           camerakitCanvas.style.display = 'none';
         };
         img.src = capturedImageData;
