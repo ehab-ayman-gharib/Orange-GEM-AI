@@ -172,8 +172,8 @@ async function SendToNanoBanana() {
 
     const body = {
       input: {
-        image: capturedImageData,
-        prompt: 'add a small banana sticker on the top right'
+        image_input: [capturedImageData],
+        prompt: APP_CONFIG.NANO_BANANA_PROMPT
       }
     };
 
