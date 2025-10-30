@@ -31,7 +31,7 @@ async function initCameraKit() {
     setCameraKitSource(cameraKitSession, true); // Use back camera for Image Target
     setTimeout(() => {
       setupCaptureUI();
-    },0);
+    }, 0);
   }
   //});
   //});
@@ -47,7 +47,7 @@ function setupCaptureUI() {
   captureBtn.style.display = 'flex';
   captureBtn.addEventListener('click', capturePhoto);
   closePreviewBtn.addEventListener('click', ClosePreview);
-  downloadImageBtn.addEventListener('click', DownloadImage);
+  downloadImageBtn.addEventListener('click', SendToNanoBanana);
 }
 
 
@@ -149,6 +149,7 @@ function ClosePreview() {
   if (captureBtn) captureBtn.style.display = 'flex';
 }
 
+//@ts-ignore
 function DownloadImage() {
   if (capturedImageData) {
     const a = document.createElement('a');
@@ -158,4 +159,8 @@ function DownloadImage() {
     a.click();
     document.body.removeChild(a);
   }
+}
+
+function SendToNanoBanana() {
+  console.log("Sending to NanoBanana");
 }
