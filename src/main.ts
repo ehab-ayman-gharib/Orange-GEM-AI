@@ -161,6 +161,67 @@ function DownloadImage() {
   }
 }
 
-function SendToNanoBanana() {
+async function SendToNanoBanana() {
   console.log("Sending to NanoBanana");
+  try {
+    if (!capturedImageData) {
+      console.warn('No captured image to send.');
+      return;
+    }
+
+    if (downloadImageBtn) {
+      downloadImageBtn.disabled = true;
+      downloadImageBtn.textContent = 'Processing...';
+    }
+
+    const body = {
+      input: {
+        image: capturedImageData,
+        prompt: 'add a small banana sticker on the top right'
+      }
+    };
+
+    const resp = await fetch(APP_CONFIG.NANO_BANANA_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`API error: ${resp.status} ${text}`);
+    }
+
+    const data = await resp.json();
+    const output = (data && (data.output ?? data.result ?? data.url ?? data)) as any;
+    let resultUrl: string | null = null;
+    if (Array.isArray(output) && output.length > 0 && typeof output[0] === 'string') {
+      resultUrl = output[0];
+    } else if (typeof output === 'string') {
+      resultUrl = output;
+    } else if (output && typeof output === 'object' && typeof output.url === 'string') {
+      resultUrl = output.url;
+    }
+
+    if (!resultUrl) {
+      throw new Error('No output URL returned by the API.');
+    }
+
+    const a = document.createElement('a');
+    a.href = resultUrl;
+    a.download = `nano-banana-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    console.log('Downloaded Nano Banana output:', resultUrl);
+  } catch (err) {
+    console.error('SendToNanoBanana error:', err);
+    alert('Failed to process image with Nano Banana. Check console for details.');
+  } finally {
+    if (downloadImageBtn) {
+      downloadImageBtn.disabled = false;
+      downloadImageBtn.textContent = 'Download';
+    }
+  }
 }
