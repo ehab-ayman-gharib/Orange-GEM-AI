@@ -28,7 +28,7 @@ async function initCameraKit() {
     console.log(`Loaded ${loadedLensesCount} lenses`);
     // Hide loader immediately and start splash fade-out
     hideSplashLoader();
-    setCameraKitSource(cameraKitSession, true); // Use back camera for Image Target
+    setCameraKitSource(cameraKitSession, true); // Use Front Camera
     setTimeout(() => {
       setupCaptureUI();
     }, 0);

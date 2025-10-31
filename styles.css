@@ -103,6 +103,27 @@ body.splash-hidden::before {
     opacity: 0;
 }
 
+/* Splash Logo - appears on splash screen, disappears with splash */
+.splash-logo {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20vw;
+    height: auto;
+    max-width: 200px;
+    min-width: 120px;
+    z-index: 2002;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+body.splash-hidden .splash-logo {
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* App Logo - top center */
 .app-logo {
     position: fixed;
