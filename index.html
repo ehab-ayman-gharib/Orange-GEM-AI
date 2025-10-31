@@ -7,8 +7,8 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, orientation=portrait">
   <title>ORANGE-GEM-AI</title>
-  <script type="module" crossorigin src="/Orange-GEM-AI/assets/index-Db7Q87W2.js"></script>
-  <link rel="stylesheet" crossorigin href="/Orange-GEM-AI/assets/index-B0uXmtC5.css">
+  <script type="module" crossorigin src="/Orange-GEM-AI/assets/index-DyyExe1z.js"></script>
+  <link rel="stylesheet" crossorigin href="/Orange-GEM-AI/assets/index-BPqWtvS_.css">
 </head>
 
 <body>
@@ -20,20 +20,28 @@
       <canvas id="CameraKit-AR-Canvas"></canvas>
       <!-- Photo Preview Canvas (Hidden by default) -->
       <canvas id="photo-preview-canvas" style="display: none;"></canvas>
+      <!-- Photo/camera action controls (wrapped to avoid overlapping) -->
+      <div class="camera-controls" style="display: none;" aria-hidden="true">
+        <!-- Upload Button -->
+        <button id="upload-btn" class="upload-btn" title="Upload Photo" style="display: none;">
+        </button>
 
-      <!-- Screenshot Button -->
-      <button id="capture-btn" class="capture-btn" title="Take Screenshot" style="display: none;">
-      </button>
+        <!-- Screenshot Button -->
+        <button id="capture-btn" class="capture-btn" title="Take Screenshot" style="display: none;">
+        </button>
 
-      <!-- Generate Button (Hidden by default) -->
-      <button id="generate-btn" class="generate-btn" style="display: none;">
-      </button>
+        <!-- Generate Button (Hidden by default) -->
+        <button id="generate-btn" class="generate-btn" style="display: none;">
+        </button>
+      </div>
 
-      <!-- Download Button (Hidden by default) -->
+      <!-- Hidden file input for upload -->
+      <input type="file" id="file-input" accept="image/*" style="display: none;">
+
+      <!-- Download and Retake (kept separate top corners) -->
       <button id="download-btn" class="download-btn" style="display: none;">
       </button>
 
-      <!-- Close Button (Hidden by default) -->
       <button id="retake-btn" class="retake-btn" style="display: none;">
       </button>
     </div>
