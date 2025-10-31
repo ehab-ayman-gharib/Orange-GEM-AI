@@ -118,6 +118,12 @@ function capturePhoto() {
     return;
   }
   try {
+    if (captureBtn) {
+      captureBtn.classList.add('click-anim');
+      setTimeout(() => {
+        if (captureBtn) captureBtn.classList.remove('click-anim');
+      }, 600);
+    }
     // Capture the current canvas content
     capturedImageData = camerakitCanvas.toDataURL('image/png');
     // Get the photo canvas and display the captured photo

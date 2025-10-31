@@ -166,17 +166,19 @@ body.splash-hidden .app-slogan {
     bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    width: 60px;
-    height: 60px;
+    width: 78px;
+    height: 78px;
     border-radius: 50%;
-    background: url('/Capture-Btn.png') center center no-repeat;
+    background: url('Capture-Btn.png') center center no-repeat;
+    background-size: cover;
+    background-color: transparent;
     border: none;
     outline: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 1s ease;
+    transition: transform 600ms cubic-bezier(.22,.61,.36,1), filter 600ms cubic-bezier(.22,.61,.36,1);
     z-index: 1001;
     backdrop-filter: blur(10px);
     -webkit-tap-highlight-color: transparent;
@@ -227,13 +229,18 @@ body.splash-hidden .app-slogan {
     transform: translateX(-50%) scale(0.95);
 }
 
+/* Click animation class applied via JS for a snappy feedback */
+.capture-btn.click-anim {
+    transform: translateX(-50%) scale(0.85);
+}
+
 /* Download Button Styling */
 .download-btn {
     position: fixed;
     top: 30px;
     right: 30px;
-    width: 63px;
-    height: 63px;
+    width: 76px;
+    height: 76px;
     border-radius: 50%;
     background: url('/DownloadBtn.png') center center no-repeat;
     background-size: 80%;
@@ -266,8 +273,8 @@ body.splash-hidden .app-slogan {
     position: fixed;
     top: 30px;
     left: 30px;
-    width: 63px;
-    height: 63px;
+    width: 76px;
+    height: 76px;
     border-radius: 50%;
     background: url('/Retake.png') center center no-repeat;
     background-size: 80%;
