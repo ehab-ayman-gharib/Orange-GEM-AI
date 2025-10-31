@@ -28,11 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Initialize Camera Kit
 async function initCameraKit() {
-  let loadedLensesCount: number = 0;
   try {
     const cameraKit = await bootstrapCameraKit({ apiToken: APP_CONFIG.CAMERA_KIT_API_TOKEN });
     cameraKitSession = await cameraKit.createSession({ liveRenderTarget: camerakitCanvas });
-    console.log(`Loaded ${loadedLensesCount} lenses`);
     // Hide loader immediately and start splash fade-out
     hideSplashLoader();
     setCameraKitSource(cameraKitSession, true); // Use Front Camera

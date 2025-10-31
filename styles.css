@@ -171,9 +171,6 @@ body.splash-hidden .app-slogan {
 /* Capture UI Styles */
 /* Upload Button Styling */
 .upload-btn {
-    position: fixed;
-    bottom: 30px;
-    left: calc(50% - 55px); /* left of center capture button */
     width: 55px;
     height: 55px;
     border-radius: 50%;
@@ -183,7 +180,7 @@ body.splash-hidden .app-slogan {
     border: none;
     outline: none;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: transform 300ms ease;
@@ -206,10 +203,6 @@ body.splash-hidden .app-slogan {
 
 /* Screenshot Button Styling */
 .capture-btn {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
     width: 78px;
     height: 78px;
     border-radius: 50%;
@@ -219,7 +212,7 @@ body.splash-hidden .app-slogan {
     border: none;
     outline: none;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: transform 600ms cubic-bezier(.22,.61,.36,1), filter 600ms cubic-bezier(.22,.61,.36,1);
@@ -230,10 +223,6 @@ body.splash-hidden .app-slogan {
 
 /* Generate Button Styling */
 .generate-btn {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
     width: 202.5px;
     min-width: 202.5px;
     height: auto;
@@ -244,10 +233,10 @@ body.splash-hidden .app-slogan {
     border: none;
     outline: none;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease;
     z-index: 1001;
     -webkit-tap-highlight-color: transparent;
 }
@@ -463,32 +452,57 @@ body.splash-hidden .app-slogan {
 /* Camera controls wrapper to prevent overlapping buttons */
 .camera-controls {
     position: fixed;
-    left: 45%;
+    left: 0;
+    right: 0;
     bottom: 28px; /* place slightly above bottom */
-    transform: translateX(-50%);
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: center;
+    /* Use CSS variables so sizes stay easy to tune */
+    --capture-size: 78px;
+    --controls-gap: 12px;
+    height: calc(var(--capture-size));
+    display: block; /* we'll absolutely position upload/generate inside */
     z-index: 1002; /* above canvas but below overlays */
     pointer-events: auto;
 }
 
-/* Place buttons inside the wrapper (override previous fixed positions) */
-.camera-controls .upload-btn,
-.camera-controls .capture-btn,
-.camera-controls .generate-btn {
-    position: static !important;
-    left: auto !important;
-    bottom: auto !important;
-    transform: none !important;
+/* Position upload around the centered capture button; generate is centered independently */
+.camera-controls .upload-btn {
+    position: absolute;
+    top: 50%;
+    left: 45%;
+    transform: translate(calc(-50% - (var(--capture-size) / 2) - var(--controls-gap)), -50%);
+    z-index: 1002;
+}
+
+/* Generate button should be centered on the viewport when visible */
+.generate-btn {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 28px;
+    z-index: 1003;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Keep the capture button fixed to the viewport center so it aligns with the top logo
+   regardless of wrapper offsets. This prevents the generate button from shifting left. */
+.camera-controls .capture-btn {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 28px;
+    width: var(--capture-size);
+    height: var(--capture-size);
+    z-index: 1004; /* above wrapper items */
 }
 
 /* Small screen adjustments */
 @media (max-width: 420px) {
     .camera-controls { gap: 8px; bottom: 18px; }
+    .camera-controls { --capture-size: 62px; --controls-gap: 8px; bottom: 18px; height: 62px; }
     .camera-controls .upload-btn { width: 46px; height: 46px; }
-    .camera-controls .capture-btn { width: 62px; height: 62px; }
+    .camera-controls .capture-btn { width: var(--capture-size); height: var(--capture-size); bottom: 18px; }
     .camera-controls .generate-btn { min-width: 160px; }
 }
 
