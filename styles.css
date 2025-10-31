@@ -164,6 +164,43 @@ body.splash-hidden .app-logo {
     -webkit-tap-highlight-color: transparent;
 }
 
+/* Generate Button Styling */
+.generate-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 202.5px;
+    min-width: 202.5px;
+    height: auto;
+    aspect-ratio: 4 / 1;
+    border-radius: 50px;
+    background: url('/Generate-Btn.png') center center no-repeat;
+    background-size: cover;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 1001;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.generate-btn:hover {
+    transform: translateX(-50%) scale(1.1);
+}
+
+.generate-btn:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
+.generate-btn:focus {
+    outline: none;
+    box-shadow: none;
+}
+
 .capture-btn:hover {
     transform: translateX(-50%) scale(1.1);
 }

@@ -11,6 +11,7 @@ let mediaStream: MediaStream;
 const camerakitCanvas = document.getElementById('CameraKit-AR-Canvas') as HTMLCanvasElement;
 let captureBtn: HTMLButtonElement;
 let capturedImageData: string | null = null;
+let generateBtn: HTMLButtonElement;
 let downloadImageBtn: HTMLButtonElement;
 let closePreviewBtn: HTMLButtonElement;
 
@@ -42,12 +43,13 @@ async function initCameraKit() {
 
 function setupCaptureUI() {
   captureBtn = document.getElementById('capture-btn') as HTMLButtonElement;
+  generateBtn = document.getElementById('generate-btn') as HTMLButtonElement;
   downloadImageBtn = document.getElementById('download-btn') as HTMLButtonElement;
   closePreviewBtn = document.getElementById('retake-btn') as HTMLButtonElement;
   captureBtn.style.display = 'flex';
   captureBtn.addEventListener('click', capturePhoto);
   closePreviewBtn.addEventListener('click', ClosePreview);
-  downloadImageBtn.addEventListener('click', SendToNanoBanana);
+  generateBtn.addEventListener('click', SendToNanoBanana);
 }
 
 
@@ -112,9 +114,9 @@ function capturePhoto() {
       }
     }
 
-    // Hide capture button, show download and close buttons
+    // Hide capture button, show generate and close buttons
     if (captureBtn) captureBtn.style.display = 'none';
-    if (downloadImageBtn) downloadImageBtn.style.display = 'flex';
+    if (generateBtn) generateBtn.style.display = 'flex';
     if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
 
   } catch (error) {
@@ -136,11 +138,11 @@ function ClosePreview() {
     camerakitCanvas.style.display = 'block';
   }
 
-  // Hide download and close buttons
-
+  // Hide generate, download and close buttons
+  if (generateBtn) generateBtn.style.display = 'none';
   if (downloadImageBtn) downloadImageBtn.style.display = 'none';
   if (closePreviewBtn) closePreviewBtn.style.display = 'none';
-  ``
+  
   // Show capture button again
   if (captureBtn) captureBtn.style.display = 'flex';
 }
@@ -204,9 +206,9 @@ async function SendToNanoBanana() {
       processingOverlay.style.display = 'flex';
     }
 
-    if (downloadImageBtn) {
-      downloadImageBtn.disabled = true;
-      downloadImageBtn.textContent = 'Processing...';
+    // Disable generate button during processing
+    if (generateBtn) {
+      generateBtn.disabled = true;
     }
 
     const body = {
@@ -245,9 +247,9 @@ async function SendToNanoBanana() {
     // Display the processed image in preview canvas instead of downloading
     displayImageInPreview(resultUrl);
     
-    // Hide download button (image is already shown in preview)
-    if (downloadImageBtn) {
-      downloadImageBtn.style.display = 'none';
+    // Hide generate button (processing complete)
+    if (generateBtn) {
+      generateBtn.style.display = 'none';
     }
     // Show retake button
     if (closePreviewBtn) {
@@ -264,9 +266,10 @@ async function SendToNanoBanana() {
       processingOverlay.style.display = 'none';
     }
     
-    if (downloadImageBtn) {
-      downloadImageBtn.disabled = false;
-      downloadImageBtn.textContent = 'Download';
+    // Hide generate button after processing and re-enable it
+    if (generateBtn) {
+      generateBtn.style.display = 'none';
+      generateBtn.disabled = false;
     }
   }
 }
