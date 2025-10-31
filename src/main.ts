@@ -50,6 +50,7 @@ function setupCaptureUI() {
   captureBtn.addEventListener('click', capturePhoto);
   closePreviewBtn.addEventListener('click', ClosePreview);
   generateBtn.addEventListener('click', SendToNanoBanana);
+  downloadImageBtn.addEventListener('click', DownloadImage);
 }
 
 
@@ -182,6 +183,11 @@ function displayImageInPreview(imageUrl: string) {
       // Show preview canvas, hide camera canvas
       photoPreviewCanvas.style.display = 'block';
       camerakitCanvas.style.display = 'none';
+
+      // Show download button when processed image is displayed
+      if (downloadImageBtn) {
+        downloadImageBtn.style.display = 'flex';
+      }
     };
     img.onerror = () => {
       console.error('Failed to load processed image');
