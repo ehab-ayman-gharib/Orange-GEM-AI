@@ -102,9 +102,11 @@ body::before {
     background: #223d58;
 }
 
-#splash-loader img {
+/* Inline loader SVG sizing */
+.inline-loader svg {
     width: 80px;
     height: 80px;
+    display: block;
 }
 
 body.splash-hidden::before {
@@ -372,9 +374,10 @@ body.splash-hidden .app-slogan {
     gap: 20px;
 }
 
-.processing-content img {
+.processing-content .inline-loader {
     width: 80px;
     height: 80px;
+    display: block;
 }
 
 /* Gender Selection Overlay */
