@@ -214,6 +214,27 @@ async function DownloadImage() {
       console.warn('Logo overlay failed; proceeding without logo');
     }
 
+    // Try to load the slogan and place at bottom center with offset matching on-screen size/position
+    try {
+      const appSloganEl = document.querySelector('.app-slogan') as HTMLImageElement | null;
+      const resolvedSloganSrc = appSloganEl?.src || 'Orange-Slogan.png';
+      const sloganImg = await loadImage(resolvedSloganSrc);
+      // Map on-screen size/offset to image coordinates for a perfect match
+      const vwToImg = compositeCanvas.width / window.innerWidth;
+      const vhToImg = compositeCanvas.height / window.innerHeight;
+      const onScreenWidth = appSloganEl?.clientWidth ?? (window.innerWidth * 0.873);
+      const rect = appSloganEl?.getBoundingClientRect();
+      const onScreenBottomOffset = rect ? (window.innerHeight - rect.bottom) : 150; // px from CSS
+      const sloganWidth = onScreenWidth * vwToImg;
+      const sloganHeight = (sloganImg.height / sloganImg.width) * sloganWidth;
+      const bottomOffset = onScreenBottomOffset * vhToImg;
+      const sloganX = (compositeCanvas.width - sloganWidth) / 2;
+      const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
+      ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
+    } catch (e) {
+      console.warn('Slogan overlay failed; proceeding without slogan');
+    }
+
     // Use toBlob + object URL for reliability (avoids giant data URLs)
     compositeCanvas.toBlob((blob) => {
       if (!blob) {
