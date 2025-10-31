@@ -228,7 +228,7 @@ body.splash-hidden .app-slogan {
     height: auto;
     aspect-ratio: 4 / 1;
     border-radius: 50px;
-    background: url('/Generate-Btn.png') center center no-repeat;
+    background: url('Generate-Btn.png') center center no-repeat;
     background-size: cover;
     border: none;
     outline: none;
@@ -275,7 +275,7 @@ body.splash-hidden .app-slogan {
     width: 76px;
     height: 76px;
     border-radius: 50%;
-    background: url('/DownloadBtn.png') center center no-repeat;
+    background: url('DownloadBtn.png') center center no-repeat;
     background-size: 80%;
     border: none;
     outline: none;
@@ -309,7 +309,7 @@ body.splash-hidden .app-slogan {
     width: 76px;
     height: 76px;
     border-radius: 50%;
-    background: url('/Retake.png') center center no-repeat;
+    background: url('Retake.png') center center no-repeat;
     background-size: 80%;
     border: none;
     outline: none;
