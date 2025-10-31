@@ -43,7 +43,7 @@ async function initCameraKit() {
 function setupCaptureUI() {
   captureBtn = document.getElementById('capture-btn') as HTMLButtonElement;
   downloadImageBtn = document.getElementById('download-btn') as HTMLButtonElement;
-  closePreviewBtn = document.getElementById('close-btn') as HTMLButtonElement;
+  closePreviewBtn = document.getElementById('retake-btn') as HTMLButtonElement;
   captureBtn.style.display = 'flex';
   captureBtn.addEventListener('click', capturePhoto);
   closePreviewBtn.addEventListener('click', ClosePreview);
