@@ -149,14 +149,62 @@ function ClosePreview() {
 }
 
 //@ts-ignore
-function DownloadImage() {
-  if (capturedImageData) {
-    const a = document.createElement('a');
-    a.href = capturedImageData;
-    a.download = `photo-preview-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+async function DownloadImage() {
+  try {
+    if (!capturedImageData) return;
+    if (downloadImageBtn) downloadImageBtn.disabled = true;
+
+    const compositeCanvas = document.createElement('canvas');
+    const ctx = compositeCanvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get canvas context');
+
+    const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+
+    // Load main (processed) image from current preview data
+    const mainImg = await loadImage(capturedImageData);
+    compositeCanvas.width = mainImg.width;
+    compositeCanvas.height = mainImg.height;
+    ctx.drawImage(mainImg, 0, 0);
+
+    // Try to load the logo using the same resolved URL as the in-page logo element
+    try {
+      const appLogoEl = document.querySelector('.app-logo') as HTMLImageElement | null;
+      const resolvedLogoSrc = appLogoEl?.src || 'Grand logo-pp final.png';
+      const logoImg = await loadImage(resolvedLogoSrc);
+      const logoWidth = compositeCanvas.width * 0.15; // ~15% of width
+      const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+      const logoX = (compositeCanvas.width - logoWidth) / 2;
+      const logoY = Math.max(20, compositeCanvas.height * 0.02);
+      ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+    } catch (e) {
+      console.warn('Logo overlay failed; proceeding without logo');
+    }
+
+    // Use toBlob + object URL for reliability (avoids giant data URLs)
+    compositeCanvas.toBlob((blob) => {
+      if (!blob) {
+        console.error('Failed to generate image blob');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  } catch (err) {
+    console.error('DownloadImage failed:', err);
+    alert('Failed to prepare image for download.');
+  } finally {
+    if (downloadImageBtn) downloadImageBtn.disabled = false;
   }
 }
 
