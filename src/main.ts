@@ -157,12 +157,51 @@ function DownloadImage() {
   }
 }
 
+function displayImageInPreview(imageUrl: string) {
+  const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
+  if (!photoPreviewCanvas || !camerakitCanvas) return;
+
+  // Set canvas dimensions to match the camera canvas
+  photoPreviewCanvas.width = camerakitCanvas.width;
+  photoPreviewCanvas.height = camerakitCanvas.height;
+
+  const ctx = photoPreviewCanvas.getContext('2d');
+  if (ctx) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      // Clear and draw the image
+      ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
+      ctx.drawImage(img, 0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
+
+      // Update capturedImageData with the processed image
+      capturedImageData = photoPreviewCanvas.toDataURL('image/png');
+
+      // Show preview canvas, hide camera canvas
+      photoPreviewCanvas.style.display = 'block';
+      camerakitCanvas.style.display = 'none';
+    };
+    img.onerror = () => {
+      console.error('Failed to load processed image');
+      alert('Failed to load processed image. Please try again.');
+    };
+    img.src = imageUrl;
+  }
+}
+
 async function SendToNanoBanana() {
   console.log("Sending to NanoBanana");
+  const processingOverlay = document.getElementById('processing-overlay') as HTMLDivElement;
+  
   try {
     if (!capturedImageData) {
       console.warn('No captured image to send.');
       return;
+    }
+
+    // Show processing overlay
+    if (processingOverlay) {
+      processingOverlay.style.display = 'flex';
     }
 
     if (downloadImageBtn) {
@@ -203,18 +242,28 @@ async function SendToNanoBanana() {
       throw new Error('No output URL returned by the API.');
     }
 
-    const a = document.createElement('a');
-    a.href = resultUrl;
-    a.download = `nano-banana-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Display the processed image in preview canvas instead of downloading
+    displayImageInPreview(resultUrl);
+    
+    // Hide download button (image is already shown in preview)
+    if (downloadImageBtn) {
+      downloadImageBtn.style.display = 'none';
+    }
+    // Show retake button
+    if (closePreviewBtn) {
+      closePreviewBtn.style.display = 'flex';
+    }
 
-    console.log('Downloaded Nano Banana output:', resultUrl);
+    console.log('Processed image displayed in preview:', resultUrl);
   } catch (err) {
     console.error('SendToNanoBanana error:', err);
     alert('Failed to process image with Nano Banana. Check console for details.');
   } finally {
+    // Hide processing overlay
+    if (processingOverlay) {
+      processingOverlay.style.display = 'none';
+    }
+    
     if (downloadImageBtn) {
       downloadImageBtn.disabled = false;
       downloadImageBtn.textContent = 'Download';
