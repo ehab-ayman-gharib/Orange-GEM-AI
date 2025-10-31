@@ -38,8 +38,7 @@ body::before {
     /* fallback */
     height: 100dvh;
     /* mobile browsers full viewport */
-    background: url('/Splash.png') center center no-repeat;
-    background-size: cover;
+    background: #000000; /* solid black instead of splash image */
     z-index: 2000;
     opacity: 1;
     transition: opacity 0.5s ease;
@@ -318,6 +317,60 @@ body.splash-hidden .app-logo {
     width: 80px;
     height: 80px;
 }
+
+/* Gender Selection Overlay */
+.gender-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 3001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gender-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 24px 28px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.gender-title {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.gender-actions {
+    display: flex;
+    gap: 16px;
+}
+
+.gender-btn {
+    padding: 10px 16px;
+    min-width: 120px;
+    border: none;
+    border-radius: 10px;
+    color: #111;
+    background: #ffd166;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.gender-btn.male { background: #66d1ff; }
+.gender-btn.female { background: #ff9ad1; }
+.gender-btn:hover { filter: brightness(1.05); }
+.gender-btn:active { filter: brightness(0.95); }
 
 .processing-content p {
     color: white;

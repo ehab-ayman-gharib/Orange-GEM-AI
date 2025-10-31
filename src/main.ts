@@ -14,6 +14,10 @@ let capturedImageData: string | null = null;
 let generateBtn: HTMLButtonElement;
 let downloadImageBtn: HTMLButtonElement;
 let closePreviewBtn: HTMLButtonElement;
+let genderOverlay: HTMLDivElement;
+let maleBtn: HTMLButtonElement;
+let femaleBtn: HTMLButtonElement;
+let currentPrompt: string = APP_CONFIG.NANO_BANANA_PROMPT;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize Camera Kit
@@ -32,6 +36,8 @@ async function initCameraKit() {
     setCameraKitSource(cameraKitSession, true); // Use Front Camera
     setTimeout(() => {
       setupCaptureUI();
+      setupGenderUI();
+      showGenderOverlay();
     }, 0);
   }
   //});
@@ -46,11 +52,34 @@ function setupCaptureUI() {
   generateBtn = document.getElementById('generate-btn') as HTMLButtonElement;
   downloadImageBtn = document.getElementById('download-btn') as HTMLButtonElement;
   closePreviewBtn = document.getElementById('retake-btn') as HTMLButtonElement;
-  captureBtn.style.display = 'flex';
+  // Hide capture until gender selection is made
+  captureBtn.style.display = 'none';
   captureBtn.addEventListener('click', capturePhoto);
   closePreviewBtn.addEventListener('click', ClosePreview);
   generateBtn.addEventListener('click', SendToNanoBanana);
   downloadImageBtn.addEventListener('click', DownloadImage);
+}
+
+function setupGenderUI() {
+  genderOverlay = document.getElementById('gender-overlay') as HTMLDivElement;
+  maleBtn = document.getElementById('select-male') as HTMLButtonElement;
+  femaleBtn = document.getElementById('select-female') as HTMLButtonElement;
+  if (maleBtn) maleBtn.onclick = () => onGenderSelected('male');
+  if (femaleBtn) femaleBtn.onclick = () => onGenderSelected('female');
+}
+
+function showGenderOverlay() {
+  if (genderOverlay) genderOverlay.style.display = 'flex';
+}
+
+function hideGenderOverlay() {
+  if (genderOverlay) genderOverlay.style.display = 'none';
+}
+
+function onGenderSelected(gender: 'male' | 'female') {
+  currentPrompt = gender === 'male' ? APP_CONFIG.NANO_BANANA_PROMPT_MALE : APP_CONFIG.NANO_BANANA_PROMPT_FEMALE;
+  hideGenderOverlay();
+  if (captureBtn) captureBtn.style.display = 'flex';
 }
 
 
@@ -268,7 +297,7 @@ async function SendToNanoBanana() {
     const body = {
       input: {
         image_input: [capturedImageData],
-        prompt: APP_CONFIG.NANO_BANANA_PROMPT
+        prompt: currentPrompt
       }
     };
 
