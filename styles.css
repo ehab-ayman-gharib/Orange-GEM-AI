@@ -473,6 +473,33 @@ body.splash-hidden .app-slogan {
     z-index: 1002;
 }
 
+/* Share button positioned to the right of the centered capture (mirror of upload) */
+/* Share button: centered independently (appears alone after processing) */
+.share-btn {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 28px;
+    z-index: 1003;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: url('share-btn.png') center center no-repeat;
+    background-size: cover;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 300ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.share-btn:hover { transform: translateX(-50%) scale(1.08); }
+.share-btn:active { transform: translateX(-50%) scale(0.95); }
+
 /* Generate button should be centered on the viewport when visible */
 .generate-btn {
     position: fixed;

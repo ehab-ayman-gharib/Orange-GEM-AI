@@ -15,11 +15,72 @@ let capturedImageData: string | null = null;
 let generateBtn: HTMLButtonElement;
 let downloadImageBtn: HTMLButtonElement;
 let closePreviewBtn: HTMLButtonElement;
+let shareBtn: HTMLButtonElement;
 let genderOverlay: HTMLDivElement;
 let maleBtn: HTMLButtonElement;
 let femaleBtn: HTMLButtonElement;
 let currentPrompt: string = APP_CONFIG.NANO_BANANA_PROMPT;
 let fileInput: HTMLInputElement;
+
+// Reusable image loader
+const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => resolve(img);
+  img.onerror = reject;
+  img.src = src;
+});
+
+/**
+ * Build a composite canvas containing the processed image plus overlays (logo, slogan).
+ * Returns a canvas element sized to the processed image.
+ */
+async function buildCompositeCanvas(imageDataUrl: string): Promise<HTMLCanvasElement> {
+  const compositeCanvas = document.createElement('canvas');
+  const ctx = compositeCanvas.getContext('2d');
+  if (!ctx) throw new Error('Failed to get canvas context');
+
+  const mainImg = await loadImage(imageDataUrl);
+  compositeCanvas.width = mainImg.width;
+  compositeCanvas.height = mainImg.height;
+  ctx.drawImage(mainImg, 0, 0);
+
+  // Try to draw logo overlay
+  try {
+    const appLogoEl = document.querySelector('.app-logo') as HTMLImageElement | null;
+    const resolvedLogoSrc = appLogoEl?.src || 'Grand logo-pp final.png';
+    const logoImg = await loadImage(resolvedLogoSrc);
+    const logoWidth = compositeCanvas.width * 0.15; // ~15% of width
+    const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+    const logoX = (compositeCanvas.width - logoWidth) / 2;
+    const logoY = Math.max(20, compositeCanvas.height * 0.02);
+    ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+  } catch (e) {
+    console.warn('Logo overlay failed; continuing without logo');
+  }
+
+  // Try to draw slogan overlay
+  try {
+    const appSloganEl = document.querySelector('.app-slogan') as HTMLImageElement | null;
+    const resolvedSloganSrc = appSloganEl?.src || 'Orange-Slogan.png';
+    const sloganImg = await loadImage(resolvedSloganSrc);
+    const vwToImg = compositeCanvas.width / window.innerWidth;
+    const vhToImg = compositeCanvas.height / window.innerHeight;
+    const onScreenWidth = appSloganEl?.clientWidth ?? (window.innerWidth * 0.873);
+    const rect = appSloganEl?.getBoundingClientRect();
+    const onScreenBottomOffset = rect ? (window.innerHeight - rect.bottom) : 150;
+    const sloganWidth = onScreenWidth * vwToImg;
+    const sloganHeight = (sloganImg.height / sloganImg.width) * sloganWidth;
+    const bottomOffset = onScreenBottomOffset * vhToImg;
+    const sloganX = (compositeCanvas.width - sloganWidth) / 2;
+    const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
+    ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
+  } catch (e) {
+    console.warn('Slogan overlay failed; continuing without slogan');
+  }
+
+  return compositeCanvas;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize Camera Kit
@@ -53,6 +114,7 @@ function setupCaptureUI() {
   generateBtn = document.getElementById('generate-btn') as HTMLButtonElement;
   downloadImageBtn = document.getElementById('download-btn') as HTMLButtonElement;
   closePreviewBtn = document.getElementById('retake-btn') as HTMLButtonElement;
+  shareBtn = document.getElementById('share-btn') as HTMLButtonElement;
   fileInput = document.getElementById('file-input') as HTMLInputElement;
   
   // Hide capture until gender selection is made
@@ -65,6 +127,10 @@ function setupCaptureUI() {
   closePreviewBtn.addEventListener('click', ClosePreview);
   generateBtn.addEventListener('click', SendToNanoBanana);
   downloadImageBtn.addEventListener('click', DownloadImage);
+  if (shareBtn) {
+    shareBtn.style.display = 'none';
+    shareBtn.addEventListener('click', ShareImage);
+  }
 }
 
 function setupGenderUI() {
@@ -260,6 +326,7 @@ function ClosePreview() {
   if (generateBtn) generateBtn.style.display = 'none';
   if (downloadImageBtn) downloadImageBtn.style.display = 'none';
   if (closePreviewBtn) closePreviewBtn.style.display = 'none';
+  if (shareBtn) shareBtn.style.display = 'none';
   
   // Show capture and upload buttons again
   if (captureBtn) captureBtn.style.display = 'flex';
@@ -272,57 +339,7 @@ async function DownloadImage() {
     if (!capturedImageData) return;
     if (downloadImageBtn) downloadImageBtn.disabled = true;
 
-    const compositeCanvas = document.createElement('canvas');
-    const ctx = compositeCanvas.getContext('2d');
-    if (!ctx) throw new Error('Failed to get canvas context');
-
-    const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-
-    // Load main (processed) image from current preview data
-    const mainImg = await loadImage(capturedImageData);
-    compositeCanvas.width = mainImg.width;
-    compositeCanvas.height = mainImg.height;
-    ctx.drawImage(mainImg, 0, 0);
-
-    // Try to load the logo using the same resolved URL as the in-page logo element
-    try {
-      const appLogoEl = document.querySelector('.app-logo') as HTMLImageElement | null;
-      const resolvedLogoSrc = appLogoEl?.src || 'Grand logo-pp final.png';
-      const logoImg = await loadImage(resolvedLogoSrc);
-      const logoWidth = compositeCanvas.width * 0.15; // ~15% of width
-      const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
-      const logoX = (compositeCanvas.width - logoWidth) / 2;
-      const logoY = Math.max(20, compositeCanvas.height * 0.02);
-      ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
-    } catch (e) {
-      console.warn('Logo overlay failed; proceeding without logo');
-    }
-
-    // Try to load the slogan and place at bottom center with offset matching on-screen size/position
-    try {
-      const appSloganEl = document.querySelector('.app-slogan') as HTMLImageElement | null;
-      const resolvedSloganSrc = appSloganEl?.src || 'Orange-Slogan.png';
-      const sloganImg = await loadImage(resolvedSloganSrc);
-      // Map on-screen size/offset to image coordinates for a perfect match
-      const vwToImg = compositeCanvas.width / window.innerWidth;
-      const vhToImg = compositeCanvas.height / window.innerHeight;
-      const onScreenWidth = appSloganEl?.clientWidth ?? (window.innerWidth * 0.873);
-      const rect = appSloganEl?.getBoundingClientRect();
-      const onScreenBottomOffset = rect ? (window.innerHeight - rect.bottom) : 150; // px from CSS
-      const sloganWidth = onScreenWidth * vwToImg;
-      const sloganHeight = (sloganImg.height / sloganImg.width) * sloganWidth;
-      const bottomOffset = onScreenBottomOffset * vhToImg;
-      const sloganX = (compositeCanvas.width - sloganWidth) / 2;
-      const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
-      ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
-    } catch (e) {
-      console.warn('Slogan overlay failed; proceeding without slogan');
-    }
+    const compositeCanvas = await buildCompositeCanvas(capturedImageData);
 
     // Use toBlob + object URL for reliability (avoids giant data URLs)
     compositeCanvas.toBlob((blob) => {
@@ -344,6 +361,48 @@ async function DownloadImage() {
     alert('Failed to prepare image for download.');
   } finally {
     if (downloadImageBtn) downloadImageBtn.disabled = false;
+  }
+}
+
+// Share the current composite image using the native share dialog when available.
+// Falls back to downloading the image if native sharing is not supported.
+async function ShareImage() {
+  try {
+    if (!capturedImageData) return;
+    if (shareBtn) shareBtn.disabled = true;
+
+    const compositeCanvas = await buildCompositeCanvas(capturedImageData);
+    const blob: Blob | null = await new Promise((resolve) => compositeCanvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('Failed to generate image blob');
+
+    const fileName = `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+    const file = new File([blob], fileName, { type: 'image/png' });
+
+    // Use native share when possible
+    const nav: any = navigator;
+    if (nav.canShare && nav.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Orange GEM AI', text: 'My Pharaonic portrait' });
+        return;
+      } catch (err) {
+        console.warn('Share failed, falling back to download', err);
+      }
+    }
+
+    // Fallback: trigger download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('ShareImage failed:', err);
+    alert('Failed to share image. Falling back to download.');
+  } finally {
+    if (shareBtn) shareBtn.disabled = false;
   }
 }
 
@@ -375,6 +434,10 @@ function displayImageInPreview(imageUrl: string) {
       if (downloadImageBtn) {
         downloadImageBtn.style.display = 'flex';
       }
+      // Show share button when processed image is displayed
+      if (shareBtn) {
+        shareBtn.style.display = 'flex';
+      }
     };
     img.onerror = () => {
       console.error('Failed to load processed image');
@@ -383,6 +446,7 @@ function displayImageInPreview(imageUrl: string) {
     img.src = imageUrl;
   }
 }
+
 
 async function SendToNanoBanana() {
   console.log("Sending to NanoBanana");
