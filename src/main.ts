@@ -9,6 +9,7 @@ import { APP_CONFIG } from './AppConfig';
 let cameraKitSession: CameraKitSession;
 let mediaStream: MediaStream;
 const camerakitCanvas = document.getElementById('CameraKit-AR-Canvas') as HTMLCanvasElement;
+let uploadBtn: HTMLButtonElement;
 let captureBtn: HTMLButtonElement;
 let capturedImageData: string | null = null;
 let generateBtn: HTMLButtonElement;
@@ -18,6 +19,7 @@ let genderOverlay: HTMLDivElement;
 let maleBtn: HTMLButtonElement;
 let femaleBtn: HTMLButtonElement;
 let currentPrompt: string = APP_CONFIG.NANO_BANANA_PROMPT;
+let fileInput: HTMLInputElement;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize Camera Kit
@@ -48,12 +50,19 @@ async function initCameraKit() {
 }
 
 function setupCaptureUI() {
+  uploadBtn = document.getElementById('upload-btn') as HTMLButtonElement;
   captureBtn = document.getElementById('capture-btn') as HTMLButtonElement;
   generateBtn = document.getElementById('generate-btn') as HTMLButtonElement;
   downloadImageBtn = document.getElementById('download-btn') as HTMLButtonElement;
   closePreviewBtn = document.getElementById('retake-btn') as HTMLButtonElement;
+  fileInput = document.getElementById('file-input') as HTMLInputElement;
+  
   // Hide capture until gender selection is made
+  uploadBtn.style.display = 'none';
   captureBtn.style.display = 'none';
+  
+  uploadBtn.addEventListener('click', () => openImageOnlyPicker());
+  fileInput.addEventListener('change', handleFileUpload);
   captureBtn.addEventListener('click', capturePhoto);
   closePreviewBtn.addEventListener('click', ClosePreview);
   generateBtn.addEventListener('click', SendToNanoBanana);
@@ -79,7 +88,15 @@ function hideGenderOverlay() {
 function onGenderSelected(gender: 'male' | 'female') {
   currentPrompt = gender === 'male' ? APP_CONFIG.NANO_BANANA_PROMPT_MALE : APP_CONFIG.NANO_BANANA_PROMPT_FEMALE;
   hideGenderOverlay();
+  // Show camera controls wrapper and the individual buttons
+  const cameraControls = document.querySelector('.camera-controls') as HTMLDivElement | null;
+  if (cameraControls) {
+    cameraControls.style.display = 'flex';
+    cameraControls.setAttribute('aria-hidden', 'false');
+  }
+
   if (captureBtn) captureBtn.style.display = 'flex';
+  if (uploadBtn) uploadBtn.style.display = 'flex';
 }
 
 
@@ -150,13 +167,80 @@ function capturePhoto() {
       }
     }
 
-    // Hide capture button, show generate and close buttons
+    // Hide capture and upload buttons, show generate and close buttons
     if (captureBtn) captureBtn.style.display = 'none';
+    if (uploadBtn) uploadBtn.style.display = 'none';
     if (generateBtn) generateBtn.style.display = 'flex';
     if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
 
   } catch (error) {
     console.error('Failed to capture photo:', error);
+  }
+}
+
+function handleFileUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const uploadedImageData = e.target?.result as string;
+    if (!uploadedImageData) return;
+
+    displayUploadedImage(uploadedImageData);
+  };
+  reader.readAsDataURL(file);
+}
+
+function displayUploadedImage(imageData: string) {
+  const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
+  if (!photoPreviewCanvas) return;
+
+  // Set reasonable canvas dimensions for uploaded images
+  photoPreviewCanvas.width = 1080;
+  photoPreviewCanvas.height = 1920;
+
+  const ctx = photoPreviewCanvas.getContext('2d');
+  if (ctx) {
+    const img = new Image();
+    img.onload = () => {
+      // Clear and draw the uploaded image, maintaining aspect ratio
+      ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
+      
+      // Calculate dimensions to fit canvas while maintaining aspect ratio
+      const imgAspect = img.width / img.height;
+      const canvasAspect = photoPreviewCanvas.width / photoPreviewCanvas.height;
+      
+      let drawWidth = photoPreviewCanvas.width;
+      let drawHeight = photoPreviewCanvas.height;
+      let drawX = 0;
+      let drawY = 0;
+
+      if (imgAspect > canvasAspect) {
+        drawHeight = drawWidth / imgAspect;
+        drawY = (photoPreviewCanvas.height - drawHeight) / 2;
+      } else {
+        drawWidth = drawHeight * imgAspect;
+        drawX = (photoPreviewCanvas.width - drawWidth) / 2;
+      }
+
+      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+
+      // Update capturedImageData with the uploaded image
+      capturedImageData = photoPreviewCanvas.toDataURL('image/png');
+
+      // Show preview canvas, hide camera canvas
+      photoPreviewCanvas.style.display = 'block';
+      camerakitCanvas.style.display = 'none';
+
+      // Hide capture and upload buttons, show generate and close buttons
+      if (captureBtn) captureBtn.style.display = 'none';
+      if (uploadBtn) uploadBtn.style.display = 'none';
+      if (generateBtn) generateBtn.style.display = 'flex';
+      if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
+    };
+    img.src = imageData;
   }
 }
 
@@ -179,8 +263,9 @@ function ClosePreview() {
   if (downloadImageBtn) downloadImageBtn.style.display = 'none';
   if (closePreviewBtn) closePreviewBtn.style.display = 'none';
   
-  // Show capture button again
+  // Show capture and upload buttons again
   if (captureBtn) captureBtn.style.display = 'flex';
+  if (uploadBtn) uploadBtn.style.display = 'flex';
 }
 
 //@ts-ignore
@@ -382,4 +467,45 @@ async function SendToNanoBanana() {
       generateBtn.disabled = false;
     }
   }
+}
+
+// Open an image-only picker that prefers the native file picker (no camera) when supported.
+// Uses the File System Access API (showOpenFilePicker) on supporting browsers (Chrome/Android).
+// Falls back to the existing file input for browsers that don't support the API (e.g., iOS Safari).
+async function openImageOnlyPicker(): Promise<void> {
+  // Prefer the modern picker if available (this generally doesn't surface camera capture options)
+  const wf = window as any;
+  if (typeof wf.showOpenFilePicker === 'function') {
+    try {
+      const handles: Array<any> = await wf.showOpenFilePicker({
+        multiple: false,
+        types: [
+          {
+            description: 'Images',
+            accept: {
+              'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif']
+            }
+          }
+        ],
+        excludeAcceptAllOption: true
+      });
+
+      if (!handles || handles.length === 0) return;
+      const fileHandle = handles[0];
+      const file = await fileHandle.getFile();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target?.result as string;
+        if (data) displayUploadedImage(data);
+      };
+      reader.readAsDataURL(file);
+      return;
+    } catch (err) {
+      // User cancelled or API not available/allowed — fall back to input
+      console.warn('showOpenFilePicker not available or cancelled, falling back to input:', err);
+    }
+  }
+
+  // Fallback for browsers without the File System Access API
+  if (fileInput) fileInput.click();
 }

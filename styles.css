@@ -169,6 +169,41 @@ body.splash-hidden .app-slogan {
 }
 
 /* Capture UI Styles */
+/* Upload Button Styling */
+.upload-btn {
+    position: fixed;
+    bottom: 30px;
+    left: calc(50% - 55px); /* left of center capture button */
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: url('Upload.png') center center no-repeat;
+    background-size: cover;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 300ms ease;
+    z-index: 1001;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.upload-btn:hover {
+    transform: scale(1.1);
+}
+
+.upload-btn:active {
+    transform: scale(0.95);
+}
+
+.upload-btn:focus {
+    outline: none;
+    box-shadow: none;
+}
+
 /* Screenshot Button Styling */
 .capture-btn {
     position: fixed;
@@ -424,3 +459,38 @@ body.splash-hidden .app-slogan {
     text-align: center;
     margin: 0;
 }
+
+/* Camera controls wrapper to prevent overlapping buttons */
+.camera-controls {
+    position: fixed;
+    left: 45%;
+    bottom: 28px; /* place slightly above bottom */
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002; /* above canvas but below overlays */
+    pointer-events: auto;
+}
+
+/* Place buttons inside the wrapper (override previous fixed positions) */
+.camera-controls .upload-btn,
+.camera-controls .capture-btn,
+.camera-controls .generate-btn {
+    position: static !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+}
+
+/* Small screen adjustments */
+@media (max-width: 420px) {
+    .camera-controls { gap: 8px; bottom: 18px; }
+    .camera-controls .upload-btn { width: 46px; height: 46px; }
+    .camera-controls .capture-btn { width: 62px; height: 62px; }
+    .camera-controls .generate-btn { min-width: 160px; }
+}
+
+/* Ensure download/retake remain at corners (no change) */
+.download-btn, .retake-btn { z-index: 1003; }
