@@ -5,6 +5,15 @@
     font-family: Arial, sans-serif;
 }
 
+/* Custom font for headings */
+@font-face {
+    font-family: 'OrangeCustom';
+    src: url('Font.TTF') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 button {
     outline: none;
     -webkit-tap-highlight-color: transparent;
@@ -372,29 +381,38 @@ body.splash-hidden .app-slogan {
 
 .gender-title {
     color: #ffffff;
-    font-size: 20px;
+    font-family: 'OrangeCustom', Arial, sans-serif;
+    font-size: 31.68px; /* +20% more */
     font-weight: 600;
     margin: 0;
 }
 
 .gender-actions {
     display: flex;
-    gap: 16px;
+    gap: 0;
+    align-items: center;
 }
 
 .gender-btn {
-    padding: 10px 16px;
-    min-width: 120px;
+    padding: 0;
+    margin: 0;
+    width: 120px; /* 20% smaller */
+    height: 48px;
     border: none;
     border-radius: 10px;
-    color: #111;
-    background: #ffd166;
+    color: transparent; /* hide label text when using image buttons */
+    background: transparent;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
     cursor: pointer;
     font-weight: 600;
+    line-height: 0; /* avoid extra vertical space from line box */
+    display: inline-flex;
 }
 
-.gender-btn.male { background: #66d1ff; }
-.gender-btn.female { background: #ff9ad1; }
+.gender-btn.male { background-image: url('King-Btn.png'); }
+.gender-btn.female { background-image: url('Queen-Btn.png'); }
 .gender-btn:hover { filter: brightness(1.05); }
 .gender-btn:active { filter: brightness(0.95); }
 
