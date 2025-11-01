@@ -470,7 +470,7 @@ body.splash-hidden .app-slogan {
 /* Position upload button centered */
 .camera-controls .upload-btn {
     position: fixed;
-    left: 50%;
+    left: calc(50% - 35px);
     transform: translateX(-50%);
     bottom: 28px;
     z-index: 1002;
@@ -480,7 +480,7 @@ body.splash-hidden .app-slogan {
 /* Share button: centered independently (appears alone after processing) */
 .share-btn {
     position: fixed;
-    left: 50%;
+    left: calc(50% + 35px);
     transform: translateX(-50%);
     bottom: 28px;
     z-index: 1003;

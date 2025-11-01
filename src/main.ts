@@ -35,19 +35,19 @@ async function initCameraKit() {
   try {
     cameraKit = await bootstrapCameraKit({ apiToken: APP_CONFIG.CAMERA_KIT_API_TOKEN });
     cameraKitSession = await cameraKit.createSession({ liveRenderTarget: camerakitCanvas });
-    cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
-      currentLens = lens;
-      cameraKitSession.applyLens(currentLens, { launchParams: { genderSelected: "M" } }).then(()=>{
-        cameraKitSession.removeLens();
-        hideSplashLoader();
-      setCameraKitSource(cameraKitSession, true); // Use Front Camera
-        setTimeout(() => {
-          setupCaptureUI();
-          setupGenderUI();
-          showGenderOverlay();
-        }, 0);
-      });
-    });
+    //cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID_M, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
+    //  currentLens = lens;
+    //  cameraKitSession.applyLens(currentLens).then(() => {
+    //  cameraKitSession.removeLens();
+    hideSplashLoader();
+    setCameraKitSource(cameraKitSession, true); // Use Front Camera
+    setTimeout(() => {
+      setupCaptureUI();
+      setupGenderUI();
+      showGenderOverlay();
+    }, 0);
+    // });
+    //});
     // Hide loader immediately and start splash fade-out
 
   }
@@ -102,7 +102,20 @@ let selectedGender: 'M' | 'F' = 'M'; // Store selected gender
 //@ts-ignore
 function onGenderSelected(gender: 'M' | 'F') {
   selectedGender = gender;
-  cameraKitSession.applyLens(currentLens, { launchParams: { genderSelected: gender } });
+  if (selectedGender === 'M') {
+    cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID_M, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
+      currentLens = lens;
+      cameraKitSession.applyLens(currentLens).then(() => { })
+
+    });
+  }
+  else{
+      cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID_F, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
+      currentLens = lens;
+      cameraKitSession.applyLens(currentLens).then(() => { })
+
+    });
+  }
   hideGenderOverlay();
 
   // Show camera controls wrapper and all buttons
@@ -181,7 +194,7 @@ async function displayUploadedImage(imageData: string) {
     // Set the image as CameraKit's source
     await cameraKitSession.setSource(imageSource);
     cameraKitSession.removeLens();
-    await cameraKitSession.applyLens(currentLens, { launchParams: { genderSelected: selectedGender } });
+    await cameraKitSession.applyLens(currentLens);
     imageSource.setRenderSize(1080, 1920);
     cameraKitSession.play();
 
@@ -195,7 +208,7 @@ async function displayUploadedImage(imageData: string) {
       try {
         // Capture the processed canvas content
         capturedImageData = camerakitCanvas.toDataURL('image/png');
-        
+
         // Get the photo canvas and display the captured photo
         const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
         if (photoPreviewCanvas) {
@@ -212,7 +225,7 @@ async function displayUploadedImage(imageData: string) {
               ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
               // Draw the image to fill the entire canvas
               ctx.drawImage(previewImg, 0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
-              
+
               // Ensure the canvas actually has the image data by converting to data URL
               // This forces the canvas to render the image
               const testData = photoPreviewCanvas.toDataURL('image/png');
@@ -245,8 +258,8 @@ async function displayUploadedImage(imageData: string) {
 }
 
 async function ClosePreview() {
- cameraKitSession.removeLens();
-    await cameraKitSession.applyLens(currentLens, { launchParams: { genderSelected: selectedGender } });
+  cameraKitSession.removeLens();
+  await cameraKitSession.applyLens(currentLens);
 }
 
 
@@ -262,7 +275,7 @@ async function DownloadImage() {
 
     // Get image data directly from camerakitCanvas
     const imageData = camerakitCanvas.toDataURL('image/png');
-    
+
     // Create composite image using the camerakit canvas data
     const compositeCanvas = document.createElement('canvas');
     const ctx = compositeCanvas.getContext('2d');
@@ -275,7 +288,7 @@ async function DownloadImage() {
       img.onerror = reject;
       img.src = imageData;
     });
-    
+
     compositeCanvas.width = mainImg.width;
     compositeCanvas.height = mainImg.height;
     ctx.drawImage(mainImg, 0, 0);
@@ -291,7 +304,7 @@ async function DownloadImage() {
         img.crossOrigin = 'anonymous';
         img.src = resolvedLogoSrc;
       });
-      
+
       const vwToImg = compositeCanvas.width / window.innerWidth;
       const onScreenWidth = appLogoEl?.clientWidth ?? 64;
       const logoWidth = onScreenWidth * vwToImg;
@@ -299,7 +312,7 @@ async function DownloadImage() {
       const logoLeftPercent = 0.90;
       const logoX = (compositeCanvas.width * logoLeftPercent) - (logoWidth * 0.5);
       const logoY = compositeCanvas.height * 0.25;
-      
+
       ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
     } catch (e) {
       console.warn('Logo overlay failed; proceeding without logo');
@@ -327,7 +340,7 @@ async function DownloadImage() {
       const bottomOffset = onScreenBottomOffset * vhToImg;
       const sloganX = (compositeCanvas.width - sloganWidth) / 2;
       const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
-      
+
       ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
     } catch (e) {
       console.warn('Slogan overlay failed; proceeding without slogan');
@@ -368,7 +381,7 @@ async function ShareImage() {
 
     // Get image data directly from camerakitCanvas
     const imageData = camerakitCanvas.toDataURL('image/png');
-    
+
     // Create composite image using the camerakit canvas data
     const compositeCanvas = document.createElement('canvas');
     const ctx = compositeCanvas.getContext('2d');
@@ -381,7 +394,7 @@ async function ShareImage() {
       img.onerror = reject;
       img.src = imageData;
     });
-    
+
     compositeCanvas.width = mainImg.width;
     compositeCanvas.height = mainImg.height;
     ctx.drawImage(mainImg, 0, 0);
@@ -397,7 +410,7 @@ async function ShareImage() {
         img.crossOrigin = 'anonymous';
         img.src = resolvedLogoSrc;
       });
-      
+
       const vwToImg = compositeCanvas.width / window.innerWidth;
       const onScreenWidth = appLogoEl?.clientWidth ?? 64;
       const logoWidth = onScreenWidth * vwToImg;
@@ -405,7 +418,7 @@ async function ShareImage() {
       const logoLeftPercent = 0.90;
       const logoX = (compositeCanvas.width * logoLeftPercent) - (logoWidth * 0.5);
       const logoY = compositeCanvas.height * 0.25;
-      
+
       ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
     } catch (e) {
       console.warn('Logo overlay failed; proceeding without logo');
@@ -433,7 +446,7 @@ async function ShareImage() {
       const bottomOffset = onScreenBottomOffset * vhToImg;
       const sloganX = (compositeCanvas.width - sloganWidth) / 2;
       const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
-      
+
       ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
     } catch (e) {
       console.warn('Slogan overlay failed; proceeding without slogan');
