@@ -97,40 +97,55 @@ function hideGenderOverlay() {
   if (genderOverlay) genderOverlay.style.display = 'none';
 }
 let selectedGender: 'M' | 'F' = 'M'; // Store selected gender
+let processingOverlay: HTMLDivElement;
+
+function showProcessingOverlay() {
+  if (!processingOverlay) {
+    processingOverlay = document.getElementById('processing-overlay') as HTMLDivElement;
+  }
+  processingOverlay.style.display = 'flex';
+}
+
+function hideProcessingOverlay() {
+  if (!processingOverlay) {
+    processingOverlay = document.getElementById('processing-overlay') as HTMLDivElement;
+  }
+  processingOverlay.style.display = 'none';
+}
 
 //@ts-ignore
-function onGenderSelected(gender: 'M' | 'F') {
+async function onGenderSelected(gender: 'M' | 'F') {
   selectedGender = gender;
-  if (selectedGender === 'M') {
-    cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID_M, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
-      currentLens = lens;
-      cameraKitSession.applyLens(currentLens).then(() => { })
-
-    });
-  }
-  else {
-    cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID_F, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
-      currentLens = lens;
-      cameraKitSession.applyLens(currentLens).then(() => {
-        console.log(selectedGender);
-      })
-
-    });
-  }
+  
+  // Hide gender overlay immediately before starting the lens application
   hideGenderOverlay();
-
-  // Show camera controls wrapper and all buttons
+  
+  // Show camera controls wrapper and all buttons immediately
   const cameraControls = document.querySelector('.camera-controls') as HTMLDivElement | null;
   if (cameraControls) {
     cameraControls.style.display = 'flex';
     cameraControls.setAttribute('aria-hidden', 'false');
   }
 
-  // Show all buttons: upload, share, retake, download
+  // Show all buttons immediately
   if (uploadBtn) uploadBtn.style.display = 'flex';
   if (shareBtn) shareBtn.style.display = 'flex';
   if (downloadImageBtn) downloadImageBtn.style.display = 'flex';
   if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
+
+  // Show processing overlay while applying the lens
+  showProcessingOverlay();
+
+  try {
+    const lensId = selectedGender === 'M' ? APP_CONFIG.LENS_ID_M : APP_CONFIG.LENS_ID_F;
+    const lens = await cameraKit.lensRepository.loadLens(lensId, APP_CONFIG.LENS_GROUP_ID);
+    currentLens = lens;
+    await cameraKitSession.applyLens(currentLens);
+  } catch (error) {
+    console.error('Failed to apply lens:', error);
+  } finally {
+    hideProcessingOverlay();
+  }
 }
 
 
@@ -180,6 +195,7 @@ function handleFileUpload(event: Event) {
 
 async function displayUploadedImage(imageData: string) {
   try {
+    showProcessingOverlay();
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
@@ -205,13 +221,20 @@ async function displayUploadedImage(imageData: string) {
   } catch (error) {
     console.error('Failed to set uploaded image as CameraKit source:', error);
     alert('Failed to load uploaded image. Please try again.');
+  } finally {
+    hideProcessingOverlay();
   }
 }
 
 async function ClosePreview() {
-  cameraKitSession.removeLens();
-  await cameraKitSession.applyLens(currentLens);
-  setCameraKitSource(cameraKitSession, true); // Use Front Camera
+  try {
+    showProcessingOverlay();
+    cameraKitSession.removeLens();
+    await cameraKitSession.applyLens(currentLens);
+    await setCameraKitSource(cameraKitSession, true); // Use Front Camera
+  } finally {
+    hideProcessingOverlay();
+  }
 }
 
 
