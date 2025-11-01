@@ -467,12 +467,12 @@ body.splash-hidden .app-slogan {
     pointer-events: auto;
 }
 
-/* Position upload around the centered capture button; generate is centered independently */
+/* Position upload to the left of the centered capture button */
 .camera-controls .upload-btn {
-    position: absolute;
-    top: 50%;
-    left: 45%;
-    transform: translate(calc(-50% - (var(--capture-size) / 2) - var(--controls-gap)), -50%);
+    position: fixed;
+    left: calc(50% - var(--capture-size) / 2 - var(--controls-gap) - 55px / 2);
+    transform: translateX(-50%);
+    bottom: 28px;
     z-index: 1002;
 }
 

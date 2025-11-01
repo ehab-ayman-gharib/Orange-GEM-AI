@@ -2,6 +2,7 @@ import {
   bootstrapCameraKit,
   CameraKitSession,
   createMediaStreamSource,
+  createImageSource,
   Transform2D,
   type Lens
 } from '@snap/camera-kit';
@@ -21,7 +22,7 @@ let genderOverlay: HTMLDivElement;
 let maleBtn: HTMLButtonElement;
 let femaleBtn: HTMLButtonElement;
 let fileInput: HTMLInputElement;
-let launchParams = { launchParams: { genderSelected: "M" } }
+//let launchParams = { launchParams: { genderSelected: "M" } }
 let cameraKit: any;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -94,15 +95,15 @@ function hideGenderOverlay() {
 //@ts-ignore
 function onGenderSelected(gender: 'M' | 'F') {
   if (gender === 'M') {
-    launchParams.launchParams.genderSelected = 'M';
+    //  launchParams.launchParams.genderSelected = 'M';
   } else {
-    launchParams.launchParams.genderSelected = 'F';
+    //launchParams.launchParams.genderSelected = 'F';
   }
-  console.log(launchParams);
+  //console.log(launchParams);
   hideGenderOverlay();
   // load the lens
   cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
-    cameraKitSession.applyLens(lens, launchParams);
+    cameraKitSession.applyLens(lens, { launchParams: { genderSelected: "M" } });
   });
 
   // Show camera controls wrapper and the individual buttons
@@ -210,58 +211,43 @@ function handleFileUpload(event: Event) {
   reader.readAsDataURL(file);
 }
 
-function displayUploadedImage(imageData: string) {
-  const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
-  if (!photoPreviewCanvas) return;
-
-  // Set reasonable canvas dimensions for uploaded images
-  photoPreviewCanvas.width = 1080;
-  photoPreviewCanvas.height = 1920;
-
-  const ctx = photoPreviewCanvas.getContext('2d');
-  if (ctx) {
+async function displayUploadedImage(imageData: string) {
+  try {
     const img = new Image();
-    img.onload = () => {
-      // Clear and draw the uploaded image, maintaining aspect ratio
-      ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
+    img.crossOrigin = 'anonymous';
+    
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = imageData;
+    });
 
-      // Calculate dimensions to fit canvas while maintaining aspect ratio
-      const imgAspect = img.width / img.height;
-      const canvasAspect = photoPreviewCanvas.width / photoPreviewCanvas.height;
+    // Create an image source for CameraKit using the uploaded image
+    const imageSource = createImageSource(img);
+    
+    // Set the image as CameraKit's source
+    await cameraKitSession.setSource(imageSource);
+    imageSource.setRenderSize(1080, 1920);
+    cameraKitSession.play();
 
-      let drawWidth = photoPreviewCanvas.width;
-      let drawHeight = photoPreviewCanvas.height;
-      let drawX = 0;
-      let drawY = 0;
+    // Store the image data for later use
+    capturedImageData = imageData;
 
-      if (imgAspect > canvasAspect) {
-        drawHeight = drawWidth / imgAspect;
-        drawY = (photoPreviewCanvas.height - drawHeight) / 2;
-      } else {
-        drawWidth = drawHeight * imgAspect;
-        drawX = (photoPreviewCanvas.width - drawWidth) / 2;
-      }
+    // Hide camera canvas (CameraKit will render on its canvas)
+    camerakitCanvas.style.display = 'block';
 
-      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-
-      // Update capturedImageData with the uploaded image
-      capturedImageData = photoPreviewCanvas.toDataURL('image/png');
-
-      // Show preview canvas, hide camera canvas
-      photoPreviewCanvas.style.display = 'block';
-      camerakitCanvas.style.display = 'none';
-
-      // Hide capture and upload buttons, show generate and close buttons
-      if (captureBtn) captureBtn.style.display = 'none';
-      if (uploadBtn) uploadBtn.style.display = 'none';
-      if (generateBtn) generateBtn.style.display = 'flex';
-      if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
-    };
-    img.src = imageData;
+    // Hide capture and upload buttons, show generate and close buttons
+    if (captureBtn) captureBtn.style.display = 'none';
+    if (uploadBtn) uploadBtn.style.display = 'none';
+    if (generateBtn) generateBtn.style.display = 'flex';
+    if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
+  } catch (error) {
+    console.error('Failed to set uploaded image as CameraKit source:', error);
+    alert('Failed to load uploaded image. Please try again.');
   }
 }
 
-function ClosePreview() {
+async function ClosePreview() {
   // Clear the captured image
   capturedImageData = null;
 
@@ -269,6 +255,13 @@ function ClosePreview() {
   let previewCanvas = document.getElementById('photo-preview-canvas');
   if (previewCanvas) {
     previewCanvas.style.display = 'none';
+  }
+
+  // Restore camera stream source if we were using an uploaded image
+  try {
+    await setCameraKitSource(cameraKitSession, true);
+  } catch (error) {
+    console.error('Failed to restore camera source:', error);
   }
 
   if (camerakitCanvas) {
