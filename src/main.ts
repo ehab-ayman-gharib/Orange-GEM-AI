@@ -12,7 +12,6 @@ let cameraKitSession: CameraKitSession;
 let mediaStream: MediaStream;
 const camerakitCanvas = document.getElementById('CameraKit-AR-Canvas') as HTMLCanvasElement;
 let uploadBtn: HTMLButtonElement;
-let capturedImageData: string | null = null;
 let generateBtn: HTMLButtonElement;
 let downloadImageBtn: HTMLButtonElement;
 let closePreviewBtn: HTMLButtonElement;
@@ -112,7 +111,9 @@ function onGenderSelected(gender: 'M' | 'F') {
   else{
       cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID_F, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
       currentLens = lens;
-      cameraKitSession.applyLens(currentLens).then(() => { })
+      cameraKitSession.applyLens(currentLens).then(() => { 
+        console.log(selectedGender);
+      })
 
     });
   }
@@ -199,57 +200,7 @@ async function displayUploadedImage(imageData: string) {
     cameraKitSession.play();
 
     // Wait a moment for lens processing, then capture the result
-    setTimeout(() => {
-      if (!camerakitCanvas) {
-        console.error('Canvas not found');
-        return;
-      }
-
-      try {
-        // Capture the processed canvas content
-        capturedImageData = camerakitCanvas.toDataURL('image/png');
-
-        // Get the photo canvas and display the captured photo
-        const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
-        if (photoPreviewCanvas) {
-          // Set canvas dimensions to match the captured image
-          photoPreviewCanvas.width = camerakitCanvas.width;
-          photoPreviewCanvas.height = camerakitCanvas.height;
-
-          // Get the 2D context and draw the captured photo
-          const ctx = photoPreviewCanvas.getContext('2d');
-          if (ctx) {
-            const previewImg = new Image();
-            previewImg.onload = () => {
-              // Clear the canvas and draw the captured image
-              ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
-              // Draw the image to fill the entire canvas
-              ctx.drawImage(previewImg, 0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
-
-              // Ensure the canvas actually has the image data by converting to data URL
-              // This forces the canvas to render the image
-              const testData = photoPreviewCanvas.toDataURL('image/png');
-              if (testData && testData !== 'data:,') {
-                console.log('Preview canvas successfully loaded image');
-              }
-
-              // Show the photo canvas, hide the main canvas
-              photoPreviewCanvas.style.display = 'block';
-              camerakitCanvas.style.display = 'none';
-            };
-            previewImg.onerror = (err) => {
-              console.error('Failed to load image into preview canvas:', err);
-            };
-            previewImg.crossOrigin = 'anonymous';
-            previewImg.src = capturedImageData;
-          }
-        }
-
-        // All buttons remain visible - no need to change visibility
-      } catch (error) {
-        console.error('Failed to capture processed image:', error);
-      }
-    }, 1000); // Wait 1 second for lens processing
+   
 
   } catch (error) {
     console.error('Failed to set uploaded image as CameraKit source:', error);
@@ -514,47 +465,6 @@ async function ShareImage() {
     alert('Failed to share image.');
   } finally {
     if (shareBtn) shareBtn.disabled = false;
-  }
-}
-//@ts-ignore
-function displayImageInPreview(imageUrl: string) {
-  const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
-  if (!photoPreviewCanvas || !camerakitCanvas) return;
-
-  // Set canvas dimensions to match the camera canvas
-  photoPreviewCanvas.width = camerakitCanvas.width;
-  photoPreviewCanvas.height = camerakitCanvas.height;
-
-  const ctx = photoPreviewCanvas.getContext('2d');
-  if (ctx) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      // Clear and draw the image
-      ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
-      ctx.drawImage(img, 0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
-
-      // Update capturedImageData with the processed image
-      capturedImageData = photoPreviewCanvas.toDataURL('image/png');
-
-      // Show preview canvas, hide camera canvas
-      photoPreviewCanvas.style.display = 'block';
-      camerakitCanvas.style.display = 'none';
-
-      // Show download button when processed image is displayed
-      if (downloadImageBtn) {
-        downloadImageBtn.style.display = 'flex';
-      }
-      // Show share button when processed image is displayed
-      if (shareBtn) {
-        shareBtn.style.display = 'flex';
-      }
-    };
-    img.onerror = () => {
-      console.error('Failed to load processed image');
-      alert('Failed to load processed image. Please try again.');
-    };
-    img.src = imageUrl;
   }
 }
 
