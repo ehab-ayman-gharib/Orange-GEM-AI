@@ -12,7 +12,6 @@ let cameraKitSession: CameraKitSession;
 let mediaStream: MediaStream;
 const camerakitCanvas = document.getElementById('CameraKit-AR-Canvas') as HTMLCanvasElement;
 let uploadBtn: HTMLButtonElement;
-let captureBtn: HTMLButtonElement;
 let capturedImageData: string | null = null;
 let generateBtn: HTMLButtonElement;
 let downloadImageBtn: HTMLButtonElement;
@@ -24,7 +23,7 @@ let femaleBtn: HTMLButtonElement;
 let fileInput: HTMLInputElement;
 //let launchParams = { launchParams: { genderSelected: "M" } }
 let cameraKit: any;
-
+let currentLens: Lens;
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize Camera Kit
   await initCameraKit();
@@ -36,14 +35,21 @@ async function initCameraKit() {
   try {
     cameraKit = await bootstrapCameraKit({ apiToken: APP_CONFIG.CAMERA_KIT_API_TOKEN });
     cameraKitSession = await cameraKit.createSession({ liveRenderTarget: camerakitCanvas });
+    cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
+      currentLens = lens;
+      cameraKitSession.applyLens(currentLens, { launchParams: { genderSelected: "M" } }).then(()=>{
+        cameraKitSession.removeLens();
+        hideSplashLoader();
+      setCameraKitSource(cameraKitSession, true); // Use Front Camera
+        setTimeout(() => {
+          setupCaptureUI();
+          setupGenderUI();
+          showGenderOverlay();
+        }, 0);
+      });
+    });
     // Hide loader immediately and start splash fade-out
-    hideSplashLoader();
-    setCameraKitSource(cameraKitSession, true); // Use Front Camera
-    setTimeout(() => {
-      setupCaptureUI();
-      setupGenderUI();
-      showGenderOverlay();
-    }, 0);
+
   }
   //});
   //});
@@ -54,25 +60,24 @@ async function initCameraKit() {
 
 function setupCaptureUI() {
   uploadBtn = document.getElementById('upload-btn') as HTMLButtonElement;
-  captureBtn = document.getElementById('capture-btn') as HTMLButtonElement;
   generateBtn = document.getElementById('generate-btn') as HTMLButtonElement;
   downloadImageBtn = document.getElementById('download-btn') as HTMLButtonElement;
   closePreviewBtn = document.getElementById('retake-btn') as HTMLButtonElement;
   shareBtn = document.getElementById('share-btn') as HTMLButtonElement;
   fileInput = document.getElementById('file-input') as HTMLInputElement;
 
-  // Hide capture until gender selection is made
+  // Hide all buttons until gender selection is made
   uploadBtn.style.display = 'none';
-  captureBtn.style.display = 'none';
+  if (shareBtn) shareBtn.style.display = 'none';
+  if (downloadImageBtn) downloadImageBtn.style.display = 'none';
+  if (closePreviewBtn) closePreviewBtn.style.display = 'none';
 
   uploadBtn.addEventListener('click', () => openImageOnlyPicker());
   fileInput.addEventListener('change', handleFileUpload);
-  captureBtn.addEventListener('click', capturePhoto);
   closePreviewBtn.addEventListener('click', ClosePreview);
   generateBtn.addEventListener('click', () => { });
   downloadImageBtn.addEventListener('click', DownloadImage);
   if (shareBtn) {
-    shareBtn.style.display = 'none';
     shareBtn.addEventListener('click', ShareImage);
   }
 }
@@ -92,29 +97,26 @@ function showGenderOverlay() {
 function hideGenderOverlay() {
   if (genderOverlay) genderOverlay.style.display = 'none';
 }
+let selectedGender: 'M' | 'F' = 'M'; // Store selected gender
+
 //@ts-ignore
 function onGenderSelected(gender: 'M' | 'F') {
-  if (gender === 'M') {
-    //  launchParams.launchParams.genderSelected = 'M';
-  } else {
-    //launchParams.launchParams.genderSelected = 'F';
-  }
-  //console.log(launchParams);
+  selectedGender = gender;
+  cameraKitSession.applyLens(currentLens, { launchParams: { genderSelected: gender } });
   hideGenderOverlay();
-  // load the lens
-  cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
-    cameraKitSession.applyLens(lens, { launchParams: { genderSelected: "M" } });
-  });
 
-  // Show camera controls wrapper and the individual buttons
+  // Show camera controls wrapper and all buttons
   const cameraControls = document.querySelector('.camera-controls') as HTMLDivElement | null;
   if (cameraControls) {
     cameraControls.style.display = 'flex';
     cameraControls.setAttribute('aria-hidden', 'false');
   }
 
-  if (captureBtn) captureBtn.style.display = 'flex';
+  // Show all buttons: upload, share, retake, download
   if (uploadBtn) uploadBtn.style.display = 'flex';
+  if (shareBtn) shareBtn.style.display = 'flex';
+  if (downloadImageBtn) downloadImageBtn.style.display = 'flex';
+  if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
 }
 
 
@@ -147,55 +149,6 @@ function hideSplashLoader() {
   if (loader) loader.style.display = 'none';
 }
 
-function capturePhoto() {
-  if (!camerakitCanvas) {
-    console.error('Canvas not found');
-    return;
-  }
-  try {
-    if (captureBtn) {
-      captureBtn.classList.add('click-anim');
-      setTimeout(() => {
-        if (captureBtn) captureBtn.classList.remove('click-anim');
-      }, 600);
-    }
-    // Capture the current canvas content
-    capturedImageData = camerakitCanvas.toDataURL('image/png');
-    // Get the photo canvas and display the captured photo
-    const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
-    if (photoPreviewCanvas) {
-      // Set canvas dimensions to match the captured image
-      photoPreviewCanvas.width = camerakitCanvas.width;
-      photoPreviewCanvas.height = camerakitCanvas.height;
-
-      // Get the 2D context and draw the captured photo
-      const ctx = photoPreviewCanvas.getContext('2d');
-      if (ctx) {
-        const img = new Image();
-        img.onload = () => {
-          // Clear the canvas and draw the captured image
-          ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
-          ctx.drawImage(img, 0, 0);
-
-          // Show the photo canvas, hide the main canvas (CSS handles sizing/positioning)
-          photoPreviewCanvas.style.display = 'block';
-          camerakitCanvas.style.display = 'none';
-        };
-        img.src = capturedImageData;
-      }
-    }
-
-    // Hide capture and upload buttons, show generate and close buttons
-    if (captureBtn) captureBtn.style.display = 'none';
-    if (uploadBtn) uploadBtn.style.display = 'none';
-    if (generateBtn) generateBtn.style.display = 'flex';
-    if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
-
-  } catch (error) {
-    console.error('Failed to capture photo:', error);
-  }
-}
-
 function handleFileUpload(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -215,7 +168,7 @@ async function displayUploadedImage(imageData: string) {
   try {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    
+
     await new Promise((resolve, reject) => {
       img.onload = resolve;
       img.onerror = reject;
@@ -224,23 +177,55 @@ async function displayUploadedImage(imageData: string) {
 
     // Create an image source for CameraKit using the uploaded image
     const imageSource = createImageSource(img);
-    
+
     // Set the image as CameraKit's source
     await cameraKitSession.setSource(imageSource);
+    cameraKitSession.removeLens();
+    await cameraKitSession.applyLens(currentLens, { launchParams: { genderSelected: selectedGender } });
     imageSource.setRenderSize(1080, 1920);
     cameraKitSession.play();
 
-    // Store the image data for later use
-    capturedImageData = imageData;
+    // Wait a moment for lens processing, then capture the result
+    setTimeout(() => {
+      if (!camerakitCanvas) {
+        console.error('Canvas not found');
+        return;
+      }
 
-    // Hide camera canvas (CameraKit will render on its canvas)
-    camerakitCanvas.style.display = 'block';
+      try {
+        // Capture the processed canvas content
+        capturedImageData = camerakitCanvas.toDataURL('image/png');
+        
+        // Get the photo canvas and display the captured photo
+        const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
+        if (photoPreviewCanvas) {
+          // Set canvas dimensions to match the captured image
+          photoPreviewCanvas.width = camerakitCanvas.width;
+          photoPreviewCanvas.height = camerakitCanvas.height;
 
-    // Hide capture and upload buttons, show generate and close buttons
-    if (captureBtn) captureBtn.style.display = 'none';
-    if (uploadBtn) uploadBtn.style.display = 'none';
-    if (generateBtn) generateBtn.style.display = 'flex';
-    if (closePreviewBtn) closePreviewBtn.style.display = 'flex';
+          // Get the 2D context and draw the captured photo
+          const ctx = photoPreviewCanvas.getContext('2d');
+          if (ctx) {
+            const previewImg = new Image();
+            previewImg.onload = () => {
+              // Clear the canvas and draw the captured image
+              ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
+              ctx.drawImage(previewImg, 0, 0);
+
+              // Show the photo canvas, hide the main canvas
+              photoPreviewCanvas.style.display = 'block';
+              camerakitCanvas.style.display = 'none';
+            };
+            previewImg.src = capturedImageData;
+          }
+        }
+
+        // All buttons remain visible - no need to change visibility
+      } catch (error) {
+        console.error('Failed to capture processed image:', error);
+      }
+    }, 1000); // Wait 1 second for lens processing
+
   } catch (error) {
     console.error('Failed to set uploaded image as CameraKit source:', error);
     alert('Failed to load uploaded image. Please try again.');
@@ -268,22 +253,102 @@ async function ClosePreview() {
     camerakitCanvas.style.display = 'block';
   }
 
-  // Hide generate, download and close buttons
-  if (generateBtn) generateBtn.style.display = 'none';
-  if (downloadImageBtn) downloadImageBtn.style.display = 'none';
-  if (closePreviewBtn) closePreviewBtn.style.display = 'none';
-  if (shareBtn) shareBtn.style.display = 'none';
-
-  // Show capture and upload buttons again
-  if (captureBtn) captureBtn.style.display = 'flex';
-  if (uploadBtn) uploadBtn.style.display = 'flex';
+  // All buttons remain visible - no need to change visibility
 }
 
 //@ts-ignore
 async function DownloadImage() {
   try {
-    if (!capturedImageData) return;
+    const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
+    if (!photoPreviewCanvas) {
+      console.warn('Photo preview canvas not found');
+      return;
+    }
+
     if (downloadImageBtn) downloadImageBtn.disabled = true;
+
+    // Get image data from the preview canvas
+    const canvasImageData = photoPreviewCanvas.toDataURL('image/png');
+    if (!canvasImageData) {
+      throw new Error('Failed to get image data from canvas');
+    }
+
+    const compositeCanvas = document.createElement('canvas');
+    const ctx = compositeCanvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get canvas context');
+
+    const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+
+    // Load main image from preview canvas
+    const mainImg = await loadImage(canvasImageData);
+    compositeCanvas.width = mainImg.width;
+    compositeCanvas.height = mainImg.height;
+    ctx.drawImage(mainImg, 0, 0);
+
+    // Try to load and overlay the logo - matching the on-screen position
+    try {
+      const appLogoEl = document.querySelector('.app-logo') as HTMLImageElement | null;
+      const resolvedLogoSrc = appLogoEl?.src || 'Grand logo-pp final.png';
+      const logoImg = await loadImage(resolvedLogoSrc);
+      
+      // Match the on-screen logo size and position from CSS
+      const vwToImg = compositeCanvas.width / window.innerWidth;
+      const onScreenWidth = appLogoEl?.clientWidth ?? 64; // CSS width: 64px
+      
+      // CSS: top: 25%, left: 90%, transform: translateX(-50%)
+      const logoWidth = onScreenWidth * vwToImg;
+      const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+      
+      // Calculate position: 90% from left, then translateX(-50%) centers it
+      const logoLeftPercent = 0.90;
+      const logoX = (compositeCanvas.width * logoLeftPercent) - (logoWidth * 0.5); // 90% - half logo width
+      const logoY = compositeCanvas.height * 0.25; // top: 25%
+      
+      ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+    } catch (e) {
+      console.warn('Logo overlay failed; proceeding without logo');
+    }
+
+    // Try to load and overlay the slogan at bottom center
+    try {
+      const appSloganEl = document.querySelector('.app-slogan') as HTMLImageElement | null;
+      const resolvedSloganSrc = appSloganEl?.src || 'Orange-Slogan.png';
+      const sloganImg = await loadImage(resolvedSloganSrc);
+      const vwToImg = compositeCanvas.width / window.innerWidth;
+      const vhToImg = compositeCanvas.height / window.innerHeight;
+      const onScreenWidth = appSloganEl?.clientWidth ?? (window.innerWidth * 0.873);
+      const rect = appSloganEl?.getBoundingClientRect();
+      const onScreenBottomOffset = rect ? (window.innerHeight - rect.bottom) : 150;
+      const sloganWidth = onScreenWidth * vwToImg;
+      const sloganHeight = (sloganImg.height / sloganImg.width) * sloganWidth;
+      const bottomOffset = onScreenBottomOffset * vhToImg;
+      const sloganX = (compositeCanvas.width - sloganWidth) / 2;
+      const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
+      ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
+    } catch (e) {
+      console.warn('Slogan overlay failed; proceeding without slogan');
+    }
+
+    // Use toBlob + object URL for reliable download
+    compositeCanvas.toBlob((blob) => {
+      if (!blob) {
+        console.error('Failed to generate image blob');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 'image/png');
 
   } catch (err) {
     console.error('DownloadImage failed:', err);

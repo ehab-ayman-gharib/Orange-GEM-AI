@@ -137,8 +137,8 @@ body.splash-hidden .splash-logo {
 /* App Logo - top center */
 .app-logo {
     position: fixed;
-    top: 20px;
-    left: 50%;
+    top: 25%;
+    left: 90%;
     transform: translateX(-50%);
     width: 64px;
     height: auto;
@@ -467,10 +467,10 @@ body.splash-hidden .app-slogan {
     pointer-events: auto;
 }
 
-/* Position upload to the left of the centered capture button */
+/* Position upload button centered */
 .camera-controls .upload-btn {
     position: fixed;
-    left: calc(50% - var(--capture-size) / 2 - var(--controls-gap) - 55px / 2);
+    left: 50%;
     transform: translateX(-50%);
     bottom: 28px;
     z-index: 1002;
