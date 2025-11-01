@@ -2,19 +2,19 @@
 <html lang="en">
 
 <head>
-  <link rel="icon" type="image/x-icon" href="/Orange-GEM-AI/assets/favicon-CxjdgLni.ico" />
+  <link rel="icon" type="image/x-icon" href="./assets/favicon-CxjdgLni.ico" />
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, orientation=portrait">
-  <title>ORANGE-GEM-AI</title>
-  <script type="module" crossorigin src="/Orange-GEM-AI/assets/index-Dz4L1Y8D.js"></script>
-  <link rel="stylesheet" crossorigin href="/Orange-GEM-AI/assets/index-B8TShBqK.css">
+  <title>ORANGE-GEM-AI</title>
+  <script type="module" crossorigin src="./assets/index-Ct9e7TZU.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Bv9ZQrp7.css">
 </head>
 
 <body>
 
   <!-- Main Container -->
-  <div class="app-container">
+  <div class="app-container">
     <!-- Camera Kit Section (Hidden by default) -->
     <div id="Camera-Kit-Section" class="Camera-Kit-Section">
       <canvas id="CameraKit-AR-Canvas"></canvas>
@@ -50,9 +50,17 @@
       <button id="retake-btn" class="retake-btn" style="display: none;">
       </button>
     </div>
-    <!-- Splash Loading GIF -->
+    <!-- Splash Loading (inline SVG spinner instead of external GIF) -->
     <div id="splash-loader">
-      <img src="/Orange-GEM-AI/assets/loading-BZDBN9Kl.gif" alt="Loading..." />
+      <div class="inline-loader" aria-hidden="true">
+        <!-- simple circular SVG spinner -->
+        <svg width="80" height="80" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="25" cy="25" r="20" fill="none" stroke="#fff" stroke-width="4" stroke-opacity="0.15"/>
+          <path d="M45 25a20 20 0 0 1-20 20" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none">
+            <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+          </path>
+        </svg>
+      </div>
     </div>
   </div>
   <!-- Gender Selection Overlay -->
@@ -66,18 +74,25 @@
     </div>
   </div>
   <!-- Processing Overlay -->
-  <div id="processing-overlay" class="processing-overlay" style="display: none;">
-    <div class="processing-content">
-      <img src="/Orange-GEM-AI/assets/loading-BZDBN9Kl.gif" alt="Processing..." />
-      <p>Processing your image...</p>
-    </div>
+    <div id="processing-overlay" class="processing-overlay" style="display: none;">
+      <div class="processing-content">
+        <div class="inline-loader" aria-hidden="true">
+          <svg width="80" height="80" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="25" cy="25" r="20" fill="none" stroke="#fff" stroke-width="4" stroke-opacity="0.15"/>
+            <path d="M45 25a20 20 0 0 1-20 20" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none">
+              <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+            </path>
+          </svg>
+        </div>
+        <p>Processing your image...</p>
+      </div>
   </div>
   <!-- Splash Logo (disappears with splash) -->
-  <img class="splash-logo" src="/Orange-GEM-AI/assets/Grand%20logo-pp%20final-BS5LrcxZ.png" alt="Orange GEM AI Logo" />
+  <img class="splash-logo" src="./assets/Grand%20logo-pp%20final-BS5LrcxZ.png" alt="Orange GEM AI Logo" />
   <!-- App Logo (shown after splash) -->
-  <img class="app-logo" src="/Orange-GEM-AI/assets/Grand%20logo-pp%20final-BS5LrcxZ.png" alt="Orange GEM AI Logo" />
+  <img class="app-logo" src="./assets/Grand%20logo-pp%20final-BS5LrcxZ.png" alt="Orange GEM AI Logo" />
   <!-- App Slogan (shown after splash) -->
-  <img class="app-slogan" src="/Orange-GEM-AI/assets/Orange-Slogan-DhkZ3Zoh.png" alt="Orange Slogan" />
+  <img class="app-slogan" src="./assets/Orange-Slogan-DhkZ3Zoh.png" alt="Orange Slogan" />
 </body>
 
 </html>
