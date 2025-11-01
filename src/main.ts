@@ -108,10 +108,10 @@ function onGenderSelected(gender: 'M' | 'F') {
 
     });
   }
-  else{
-      cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID_F, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
+  else {
+    cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID_F, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
       currentLens = lens;
-      cameraKitSession.applyLens(currentLens).then(() => { 
+      cameraKitSession.applyLens(currentLens).then(() => {
         console.log(selectedGender);
       })
 
@@ -200,7 +200,7 @@ async function displayUploadedImage(imageData: string) {
     cameraKitSession.play();
 
     // Wait a moment for lens processing, then capture the result
-   
+
 
   } catch (error) {
     console.error('Failed to set uploaded image as CameraKit source:', error);
@@ -211,6 +211,7 @@ async function displayUploadedImage(imageData: string) {
 async function ClosePreview() {
   cameraKitSession.removeLens();
   await cameraKitSession.applyLens(currentLens);
+  setCameraKitSource(cameraKitSession, true); // Use Front Camera
 }
 
 
