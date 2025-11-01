@@ -245,27 +245,8 @@ async function displayUploadedImage(imageData: string) {
 }
 
 async function ClosePreview() {
-  // Clear the captured image
-  capturedImageData = null;
-
-  // Hide photo preview canvas, show main canvas
-  let previewCanvas = document.getElementById('photo-preview-canvas');
-  if (previewCanvas) {
-    previewCanvas.style.display = 'none';
-  }
-
-  // Restore camera stream source if we were using an uploaded image
-  try {
-    await setCameraKitSource(cameraKitSession, true);
-  } catch (error) {
-    console.error('Failed to restore camera source:', error);
-  }
-
-  if (camerakitCanvas) {
-    camerakitCanvas.style.display = 'block';
-  }
-
-  // All buttons remain visible - no need to change visibility
+ cameraKitSession.removeLens();
+    await cameraKitSession.applyLens(currentLens, { launchParams: { genderSelected: selectedGender } });
 }
 
 
