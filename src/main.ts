@@ -210,12 +210,24 @@ async function displayUploadedImage(imageData: string) {
             previewImg.onload = () => {
               // Clear the canvas and draw the captured image
               ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
-              ctx.drawImage(previewImg, 0, 0);
+              // Draw the image to fill the entire canvas
+              ctx.drawImage(previewImg, 0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
+              
+              // Ensure the canvas actually has the image data by converting to data URL
+              // This forces the canvas to render the image
+              const testData = photoPreviewCanvas.toDataURL('image/png');
+              if (testData && testData !== 'data:,') {
+                console.log('Preview canvas successfully loaded image');
+              }
 
               // Show the photo canvas, hide the main canvas
               photoPreviewCanvas.style.display = 'block';
               camerakitCanvas.style.display = 'none';
             };
+            previewImg.onerror = (err) => {
+              console.error('Failed to load image into preview canvas:', err);
+            };
+            previewImg.crossOrigin = 'anonymous';
             previewImg.src = capturedImageData;
           }
         }
@@ -256,69 +268,74 @@ async function ClosePreview() {
   // All buttons remain visible - no need to change visibility
 }
 
+
+
 //@ts-ignore
 async function DownloadImage() {
   try {
-    const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
-    if (!photoPreviewCanvas) {
-      console.warn('Photo preview canvas not found');
+    if (downloadImageBtn) downloadImageBtn.disabled = true;
+    if (!camerakitCanvas) {
+      alert('No image available to download.');
       return;
     }
 
-    if (downloadImageBtn) downloadImageBtn.disabled = true;
-
-    // Get image data from the preview canvas
-    const canvasImageData = photoPreviewCanvas.toDataURL('image/png');
-    if (!canvasImageData) {
-      throw new Error('Failed to get image data from canvas');
-    }
-
+    // Get image data directly from camerakitCanvas
+    const imageData = camerakitCanvas.toDataURL('image/png');
+    
+    // Create composite image using the camerakit canvas data
     const compositeCanvas = document.createElement('canvas');
     const ctx = compositeCanvas.getContext('2d');
     if (!ctx) throw new Error('Failed to get canvas context');
 
-    const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+    // Load the camera kit image
+    const mainImg = await new Promise<HTMLImageElement>((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = reject;
-      img.src = src;
+      img.src = imageData;
     });
-
-    // Load main image from preview canvas
-    const mainImg = await loadImage(canvasImageData);
+    
     compositeCanvas.width = mainImg.width;
     compositeCanvas.height = mainImg.height;
     ctx.drawImage(mainImg, 0, 0);
 
-    // Try to load and overlay the logo - matching the on-screen position
+    // Add logo overlay
     try {
       const appLogoEl = document.querySelector('.app-logo') as HTMLImageElement | null;
       const resolvedLogoSrc = appLogoEl?.src || 'Grand logo-pp final.png';
-      const logoImg = await loadImage(resolvedLogoSrc);
+      const logoImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.crossOrigin = 'anonymous';
+        img.src = resolvedLogoSrc;
+      });
       
-      // Match the on-screen logo size and position from CSS
       const vwToImg = compositeCanvas.width / window.innerWidth;
-      const onScreenWidth = appLogoEl?.clientWidth ?? 64; // CSS width: 64px
-      
-      // CSS: top: 25%, left: 90%, transform: translateX(-50%)
+      const onScreenWidth = appLogoEl?.clientWidth ?? 64;
       const logoWidth = onScreenWidth * vwToImg;
       const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
-      
-      // Calculate position: 90% from left, then translateX(-50%) centers it
       const logoLeftPercent = 0.90;
-      const logoX = (compositeCanvas.width * logoLeftPercent) - (logoWidth * 0.5); // 90% - half logo width
-      const logoY = compositeCanvas.height * 0.25; // top: 25%
+      const logoX = (compositeCanvas.width * logoLeftPercent) - (logoWidth * 0.5);
+      const logoY = compositeCanvas.height * 0.25;
       
       ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
     } catch (e) {
       console.warn('Logo overlay failed; proceeding without logo');
     }
 
-    // Try to load and overlay the slogan at bottom center
+    // Add slogan overlay
     try {
       const appSloganEl = document.querySelector('.app-slogan') as HTMLImageElement | null;
       const resolvedSloganSrc = appSloganEl?.src || 'Orange-Slogan.png';
-      const sloganImg = await loadImage(resolvedSloganSrc);
+      const sloganImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.crossOrigin = 'anonymous';
+        img.src = resolvedSloganSrc;
+      });
+
       const vwToImg = compositeCanvas.width / window.innerWidth;
       const vhToImg = compositeCanvas.height / window.innerHeight;
       const onScreenWidth = appSloganEl?.clientWidth ?? (window.innerWidth * 0.873);
@@ -329,26 +346,26 @@ async function DownloadImage() {
       const bottomOffset = onScreenBottomOffset * vhToImg;
       const sloganX = (compositeCanvas.width - sloganWidth) / 2;
       const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
+      
       ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
     } catch (e) {
       console.warn('Slogan overlay failed; proceeding without slogan');
     }
 
-    // Use toBlob + object URL for reliable download
-    compositeCanvas.toBlob((blob) => {
-      if (!blob) {
-        console.error('Failed to generate image blob');
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 'image/png');
+    // Convert to blob and download
+    const blob = await new Promise<Blob | null>((resolve) => {
+      compositeCanvas.toBlob((b) => resolve(b), 'image/png');
+    });
+    if (!blob) throw new Error('Failed to create image blob');
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
   } catch (err) {
     console.error('DownloadImage failed:', err);
@@ -361,8 +378,149 @@ async function DownloadImage() {
 // Share the current composite image using the native share dialog when available.
 // Falls back to downloading the image if native sharing is not supported.
 async function ShareImage() {
+  try {
+    if (shareBtn) shareBtn.disabled = true;
+    if (!camerakitCanvas) {
+      alert('No image available to share.');
+      return;
+    }
 
+    // Get image data directly from camerakitCanvas
+    const imageData = camerakitCanvas.toDataURL('image/png');
+    
+    // Create composite image using the camerakit canvas data
+    const compositeCanvas = document.createElement('canvas');
+    const ctx = compositeCanvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get canvas context');
 
+    // Load the camera kit image
+    const mainImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = imageData;
+    });
+    
+    compositeCanvas.width = mainImg.width;
+    compositeCanvas.height = mainImg.height;
+    ctx.drawImage(mainImg, 0, 0);
+
+    // Add logo overlay
+    try {
+      const appLogoEl = document.querySelector('.app-logo') as HTMLImageElement | null;
+      const resolvedLogoSrc = appLogoEl?.src || 'Grand logo-pp final.png';
+      const logoImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.crossOrigin = 'anonymous';
+        img.src = resolvedLogoSrc;
+      });
+      
+      const vwToImg = compositeCanvas.width / window.innerWidth;
+      const onScreenWidth = appLogoEl?.clientWidth ?? 64;
+      const logoWidth = onScreenWidth * vwToImg;
+      const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+      const logoLeftPercent = 0.90;
+      const logoX = (compositeCanvas.width * logoLeftPercent) - (logoWidth * 0.5);
+      const logoY = compositeCanvas.height * 0.25;
+      
+      ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+    } catch (e) {
+      console.warn('Logo overlay failed; proceeding without logo');
+    }
+
+    // Add slogan overlay
+    try {
+      const appSloganEl = document.querySelector('.app-slogan') as HTMLImageElement | null;
+      const resolvedSloganSrc = appSloganEl?.src || 'Orange-Slogan.png';
+      const sloganImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.crossOrigin = 'anonymous';
+        img.src = resolvedSloganSrc;
+      });
+
+      const vwToImg = compositeCanvas.width / window.innerWidth;
+      const vhToImg = compositeCanvas.height / window.innerHeight;
+      const onScreenWidth = appSloganEl?.clientWidth ?? (window.innerWidth * 0.873);
+      const rect = appSloganEl?.getBoundingClientRect();
+      const onScreenBottomOffset = rect ? (window.innerHeight - rect.bottom) : 150;
+      const sloganWidth = onScreenWidth * vwToImg;
+      const sloganHeight = (sloganImg.height / sloganImg.width) * sloganWidth;
+      const bottomOffset = onScreenBottomOffset * vhToImg;
+      const sloganX = (compositeCanvas.width - sloganWidth) / 2;
+      const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
+      
+      ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
+    } catch (e) {
+      console.warn('Slogan overlay failed; proceeding without slogan');
+    }
+
+    // Convert to blob for sharing
+    const blob = await new Promise<Blob | null>((resolve) => {
+      compositeCanvas.toBlob((b) => resolve(b), 'image/png');
+    });
+    if (!blob) throw new Error('Failed to create image blob');
+
+    // Check if Web Share API is available (mobile browsers)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'image.png', { type: 'image/png' })] })) {
+      try {
+        const file = new File([blob], `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`, { type: 'image/png' });
+        await navigator.share({
+          files: [file],
+          title: 'Orange GEM AI',
+          text: 'Check out this image from Orange GEM AI!'
+        });
+      } catch (shareError: any) {
+        // User cancelled or share failed, fall back to download
+        if (shareError.name !== 'AbortError') {
+          console.warn('Share failed, falling back to download:', shareError);
+          // Fall through to download
+        } else {
+          // User cancelled, do nothing
+          return;
+        }
+      }
+    }
+
+    // Fallback: Use Web Share API with just URL/text if files not supported, or download
+    if (navigator.share) {
+      try {
+        // Try sharing without file (some browsers support URL sharing)
+        const url = URL.createObjectURL(blob);
+        await navigator.share({
+          title: 'Orange GEM AI',
+          text: 'Check out this image from Orange GEM AI!',
+          url: url
+        });
+        URL.revokeObjectURL(url);
+        return;
+      } catch (shareError: any) {
+        // Fall through to download if share fails
+        if (shareError.name === 'AbortError') {
+          return; // User cancelled
+        }
+      }
+    }
+
+    // Final fallback: Download the image
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+  } catch (err) {
+    console.error('ShareImage failed:', err);
+    alert('Failed to share image.');
+  } finally {
+    if (shareBtn) shareBtn.disabled = false;
+  }
 }
 //@ts-ignore
 function displayImageInPreview(imageUrl: string) {
