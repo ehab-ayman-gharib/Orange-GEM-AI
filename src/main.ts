@@ -19,68 +19,9 @@ let shareBtn: HTMLButtonElement;
 let genderOverlay: HTMLDivElement;
 let maleBtn: HTMLButtonElement;
 let femaleBtn: HTMLButtonElement;
-let currentPrompt: string = APP_CONFIG.NANO_BANANA_PROMPT;
 let fileInput: HTMLInputElement;
+let launchParams = { launchParams: { genderSelected: "M" } }
 
-// Reusable image loader
-const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => resolve(img);
-  img.onerror = reject;
-  img.src = src;
-});
-
-/**
- * Build a composite canvas containing the processed image plus overlays (logo, slogan).
- * Returns a canvas element sized to the processed image.
- */
-async function buildCompositeCanvas(imageDataUrl: string): Promise<HTMLCanvasElement> {
-  const compositeCanvas = document.createElement('canvas');
-  const ctx = compositeCanvas.getContext('2d');
-  if (!ctx) throw new Error('Failed to get canvas context');
-
-  const mainImg = await loadImage(imageDataUrl);
-  compositeCanvas.width = mainImg.width;
-  compositeCanvas.height = mainImg.height;
-  ctx.drawImage(mainImg, 0, 0);
-
-  // Try to draw logo overlay
-  try {
-    const appLogoEl = document.querySelector('.app-logo') as HTMLImageElement | null;
-    const resolvedLogoSrc = appLogoEl?.src || 'Grand logo-pp final.png';
-    const logoImg = await loadImage(resolvedLogoSrc);
-    const logoWidth = compositeCanvas.width * 0.15; // ~15% of width
-    const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
-    const logoX = (compositeCanvas.width - logoWidth) / 2;
-    const logoY = Math.max(20, compositeCanvas.height * 0.02);
-    ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
-  } catch (e) {
-    console.warn('Logo overlay failed; continuing without logo');
-  }
-
-  // Try to draw slogan overlay
-  try {
-    const appSloganEl = document.querySelector('.app-slogan') as HTMLImageElement | null;
-    const resolvedSloganSrc = appSloganEl?.src || 'Orange-Slogan.png';
-    const sloganImg = await loadImage(resolvedSloganSrc);
-    const vwToImg = compositeCanvas.width / window.innerWidth;
-    const vhToImg = compositeCanvas.height / window.innerHeight;
-    const onScreenWidth = appSloganEl?.clientWidth ?? (window.innerWidth * 0.873);
-    const rect = appSloganEl?.getBoundingClientRect();
-    const onScreenBottomOffset = rect ? (window.innerHeight - rect.bottom) : 150;
-    const sloganWidth = onScreenWidth * vwToImg;
-    const sloganHeight = (sloganImg.height / sloganImg.width) * sloganWidth;
-    const bottomOffset = onScreenBottomOffset * vhToImg;
-    const sloganX = (compositeCanvas.width - sloganWidth) / 2;
-    const sloganY = compositeCanvas.height - bottomOffset - sloganHeight;
-    ctx.drawImage(sloganImg, sloganX, sloganY, sloganWidth, sloganHeight);
-  } catch (e) {
-    console.warn('Slogan overlay failed; continuing without slogan');
-  }
-
-  return compositeCanvas;
-}
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize Camera Kit
@@ -89,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Initialize Camera Kit
 async function initCameraKit() {
+
   try {
     const cameraKit = await bootstrapCameraKit({ apiToken: APP_CONFIG.CAMERA_KIT_API_TOKEN });
     cameraKitSession = await cameraKit.createSession({ liveRenderTarget: camerakitCanvas });
@@ -116,16 +58,16 @@ function setupCaptureUI() {
   closePreviewBtn = document.getElementById('retake-btn') as HTMLButtonElement;
   shareBtn = document.getElementById('share-btn') as HTMLButtonElement;
   fileInput = document.getElementById('file-input') as HTMLInputElement;
-  
+
   // Hide capture until gender selection is made
   uploadBtn.style.display = 'none';
   captureBtn.style.display = 'none';
-  
+
   uploadBtn.addEventListener('click', () => openImageOnlyPicker());
   fileInput.addEventListener('change', handleFileUpload);
   captureBtn.addEventListener('click', capturePhoto);
   closePreviewBtn.addEventListener('click', ClosePreview);
-  generateBtn.addEventListener('click', SendToNanoBanana);
+  generateBtn.addEventListener('click', () => { });
   downloadImageBtn.addEventListener('click', DownloadImage);
   if (shareBtn) {
     shareBtn.style.display = 'none';
@@ -137,8 +79,8 @@ function setupGenderUI() {
   genderOverlay = document.getElementById('gender-overlay') as HTMLDivElement;
   maleBtn = document.getElementById('select-male') as HTMLButtonElement;
   femaleBtn = document.getElementById('select-female') as HTMLButtonElement;
-  if (maleBtn) maleBtn.onclick = () => onGenderSelected('male');
-  if (femaleBtn) femaleBtn.onclick = () => onGenderSelected('female');
+  if (maleBtn) maleBtn.onclick = () => onGenderSelected('M');
+  if (femaleBtn) femaleBtn.onclick = () => onGenderSelected('F');
 }
 
 function showGenderOverlay() {
@@ -148,9 +90,14 @@ function showGenderOverlay() {
 function hideGenderOverlay() {
   if (genderOverlay) genderOverlay.style.display = 'none';
 }
-
-function onGenderSelected(gender: 'male' | 'female') {
-  currentPrompt = gender === 'male' ? APP_CONFIG.NANO_BANANA_PROMPT_MALE : APP_CONFIG.NANO_BANANA_PROMPT_FEMALE;
+//@ts-ignore
+function onGenderSelected(gender: 'M' | 'F') {
+  if(gender === 'M') {
+    launchParams.launchParams.genderSelected = 'M';
+  } else {
+    launchParams.launchParams.genderSelected = 'F';
+  }
+  console.log(launchParams);
   hideGenderOverlay();
   // Show camera controls wrapper and the individual buttons
   const cameraControls = document.querySelector('.camera-controls') as HTMLDivElement | null;
@@ -271,11 +218,11 @@ function displayUploadedImage(imageData: string) {
     img.onload = () => {
       // Clear and draw the uploaded image, maintaining aspect ratio
       ctx.clearRect(0, 0, photoPreviewCanvas.width, photoPreviewCanvas.height);
-      
+
       // Calculate dimensions to fit canvas while maintaining aspect ratio
       const imgAspect = img.width / img.height;
       const canvasAspect = photoPreviewCanvas.width / photoPreviewCanvas.height;
-      
+
       let drawWidth = photoPreviewCanvas.width;
       let drawHeight = photoPreviewCanvas.height;
       let drawX = 0;
@@ -327,7 +274,7 @@ function ClosePreview() {
   if (downloadImageBtn) downloadImageBtn.style.display = 'none';
   if (closePreviewBtn) closePreviewBtn.style.display = 'none';
   if (shareBtn) shareBtn.style.display = 'none';
-  
+
   // Show capture and upload buttons again
   if (captureBtn) captureBtn.style.display = 'flex';
   if (uploadBtn) uploadBtn.style.display = 'flex';
@@ -339,23 +286,6 @@ async function DownloadImage() {
     if (!capturedImageData) return;
     if (downloadImageBtn) downloadImageBtn.disabled = true;
 
-    const compositeCanvas = await buildCompositeCanvas(capturedImageData);
-
-    // Use toBlob + object URL for reliability (avoids giant data URLs)
-    compositeCanvas.toBlob((blob) => {
-      if (!blob) {
-        console.error('Failed to generate image blob');
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 'image/png');
   } catch (err) {
     console.error('DownloadImage failed:', err);
     alert('Failed to prepare image for download.');
@@ -367,45 +297,10 @@ async function DownloadImage() {
 // Share the current composite image using the native share dialog when available.
 // Falls back to downloading the image if native sharing is not supported.
 async function ShareImage() {
-  try {
-    if (!capturedImageData) return;
-    if (shareBtn) shareBtn.disabled = true;
 
-    const compositeCanvas = await buildCompositeCanvas(capturedImageData);
-    const blob: Blob | null = await new Promise((resolve) => compositeCanvas.toBlob(resolve, 'image/png'));
-    if (!blob) throw new Error('Failed to generate image blob');
 
-    const fileName = `orange-gem-ai-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
-    const file = new File([blob], fileName, { type: 'image/png' });
-
-    // Use native share when possible
-    const nav: any = navigator;
-    if (nav.canShare && nav.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'Orange GEM AI', text: 'My Pharaonic portrait' });
-        return;
-      } catch (err) {
-        console.warn('Share failed, falling back to download', err);
-      }
-    }
-
-    // Fallback: trigger download
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error('ShareImage failed:', err);
-    alert('Failed to share image. Falling back to download.');
-  } finally {
-    if (shareBtn) shareBtn.disabled = false;
-  }
 }
-
+//@ts-ignore
 function displayImageInPreview(imageUrl: string) {
   const photoPreviewCanvas = document.getElementById('photo-preview-canvas') as HTMLCanvasElement;
   if (!photoPreviewCanvas || !camerakitCanvas) return;
@@ -448,88 +343,6 @@ function displayImageInPreview(imageUrl: string) {
 }
 
 
-async function SendToNanoBanana() {
-  console.log("Sending to NanoBanana");
-  const processingOverlay = document.getElementById('processing-overlay') as HTMLDivElement;
-  
-  try {
-    if (!capturedImageData) {
-      console.warn('No captured image to send.');
-      return;
-    }
-
-    // Show processing overlay
-    if (processingOverlay) {
-      processingOverlay.style.display = 'flex';
-    }
-
-    // Disable generate button during processing
-    if (generateBtn) {
-      generateBtn.disabled = true;
-    }
-
-    const body = {
-      input: {
-        image_input: [capturedImageData],
-        prompt: currentPrompt
-      }
-    };
-
-    const resp = await fetch(APP_CONFIG.NANO_BANANA_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`API error: ${resp.status} ${text}`);
-    }
-
-    const data = await resp.json();
-    const output = (data && (data.output ?? data.result ?? data.url ?? data)) as any;
-    let resultUrl: string | null = null;
-    if (Array.isArray(output) && output.length > 0 && typeof output[0] === 'string') {
-      resultUrl = output[0];
-    } else if (typeof output === 'string') {
-      resultUrl = output;
-    } else if (output && typeof output === 'object' && typeof output.url === 'string') {
-      resultUrl = output.url;
-    }
-
-    if (!resultUrl) {
-      throw new Error('No output URL returned by the API.');
-    }
-
-    // Display the processed image in preview canvas instead of downloading
-    displayImageInPreview(resultUrl);
-    
-    // Hide generate button (processing complete)
-    if (generateBtn) {
-      generateBtn.style.display = 'none';
-    }
-    // Show retake button
-    if (closePreviewBtn) {
-      closePreviewBtn.style.display = 'flex';
-    }
-
-    console.log('Processed image displayed in preview:', resultUrl);
-  } catch (err) {
-    console.error('SendToNanoBanana error:', err);
-    alert('Failed to process image with Nano Banana. Check console for details.');
-  } finally {
-    // Hide processing overlay
-    if (processingOverlay) {
-      processingOverlay.style.display = 'none';
-    }
-    
-    // Hide generate button after processing and re-enable it
-    if (generateBtn) {
-      generateBtn.style.display = 'none';
-      generateBtn.disabled = false;
-    }
-  }
-}
 
 // Open an image-only picker that prefers the native file picker (no camera) when supported.
 // Uses the File System Access API (showOpenFilePicker) on supporting browsers (Chrome/Android).
