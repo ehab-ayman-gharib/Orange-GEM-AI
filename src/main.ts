@@ -2,7 +2,8 @@ import {
   bootstrapCameraKit,
   CameraKitSession,
   createMediaStreamSource,
-  Transform2D
+  Transform2D,
+  type Lens
 } from '@snap/camera-kit';
 import { APP_CONFIG } from './AppConfig';
 
@@ -21,7 +22,7 @@ let maleBtn: HTMLButtonElement;
 let femaleBtn: HTMLButtonElement;
 let fileInput: HTMLInputElement;
 let launchParams = { launchParams: { genderSelected: "M" } }
-
+let cameraKit: any;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize Camera Kit
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initCameraKit() {
 
   try {
-    const cameraKit = await bootstrapCameraKit({ apiToken: APP_CONFIG.CAMERA_KIT_API_TOKEN });
+    cameraKit = await bootstrapCameraKit({ apiToken: APP_CONFIG.CAMERA_KIT_API_TOKEN });
     cameraKitSession = await cameraKit.createSession({ liveRenderTarget: camerakitCanvas });
     // Hide loader immediately and start splash fade-out
     hideSplashLoader();
@@ -92,13 +93,18 @@ function hideGenderOverlay() {
 }
 //@ts-ignore
 function onGenderSelected(gender: 'M' | 'F') {
-  if(gender === 'M') {
+  if (gender === 'M') {
     launchParams.launchParams.genderSelected = 'M';
   } else {
     launchParams.launchParams.genderSelected = 'F';
   }
   console.log(launchParams);
   hideGenderOverlay();
+  // load the lens
+  cameraKit.lensRepository.loadLens(APP_CONFIG.LENS_ID, APP_CONFIG.LENS_GROUP_ID).then((lens: Lens) => {
+    cameraKitSession.applyLens(lens, launchParams);
+  });
+
   // Show camera controls wrapper and the individual buttons
   const cameraControls = document.querySelector('.camera-controls') as HTMLDivElement | null;
   if (cameraControls) {
